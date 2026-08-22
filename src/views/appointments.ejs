@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Appointments - GP Connect</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="/css/styles.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4a6fa5;
+      --secondary: #166088;
+      --accent: #4fc3f7;
+      --light: #f8f9fa;
+      --dark: #212529;
+      --success: #28a745;
+      --danger: #dc3545;
+      --warning: #ffc107;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #f5f7fa;
+    }
+
+    .card {
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      transition: transform 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+    }
+
+    .card-header {
+      background-color: var(--primary);
+      color: white;
+      border-radius: 12px 12px 0 0 !important;
+      padding: 1.25rem 1.5rem;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .btn-primary:hover {
+      background-color: var(--secondary);
+      border-color: var(--secondary);
+    }
+
+    .btn-outline-primary {
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .btn-outline-primary:hover {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .btn-danger {
+      background-color: var(--danger);
+      border-color: var(--danger);
+    }
+
+    .table {
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .table th {
+      background-color: var(--light);
+      color: var(--dark);
+      font-weight: 600;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .table td {
+      vertical-align: middle;
+    }
+
+    .badge-urgent {
+      background-color: var(--danger);
+    }
+
+    .badge-soon {
+      background-color: var(--warning);
+    }
+
+    .badge-routine {
+      background-color: var(--success);
+    }
+
+    .form-control,
+    .form-select {
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #ced4da;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 0.25rem rgba(79, 195, 247, 0.25);
+    }
+
+    .alert {
+      border-radius: 8px;
+    }
+
+    .appointment-actions .btn {
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .section-title {
+      position: relative;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 60px;
+      height: 3px;
+      background-color: var(--accent);
+    }
+
+    .search-icon {
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--primary);
+    }
+
+    /* High Contrast Overrides */
+    .high-contrast body {
+      background-color: #000000 !important;
+      color: #ffffff !important;
+    }
+
+    .high-contrast .card {
+      background-color: #000000 !important;
+      border: 2px solid #ffffff !important;
+      color: #ffffff !important;
+    }
+
+    .high-contrast .card-header {
+      background-color: #0000ff !important;
+      color: #ffffff !important;
+      border-bottom: 2px solid #ffffff !important;
+    }
+
+    .high-contrast .btn-primary {
+      background-color: #0000ff !important;
+      border-color: #ffffff !important;
+      color: #ffffff !important;
+    }
+
+    .high-contrast .btn-primary:hover {
+      background-color: #000099 !important;
+      color: #ffff00 !important;
+    }
+
+    .high-contrast .btn-outline-primary {
+      border-color: #ffffff !important;
+      color: #ffffff !important;
+    }
+
+    .high-contrast .btn-outline-primary:hover {
+      background-color: #ffffff !important;
+      color: #000000 !important;
+    }
+
+    .high-contrast .btn-danger {
+      background-color: #ff0000 !important;
+      border-color: #ffffff !important;
+      color: #ffffff !important;
+    }
+
+    .high-contrast .btn-danger:hover {
+      background-color: #cc0000 !important;
+      color: #ffff00 !important;
+    }
+
+    .high-contrast .btn-outline-danger {
+      border-color: #ffffff !important;
+      color: #ffffff !important;
+    }
+
+    .high-contrast .btn-outline-danger:hover {
+      background-color: #ffffff !important;
+      color: #000000 !important;
+    }
+
+    .high-contrast .table {
+      background-color: #000000 !important;
+      color: #ffffff !important;
+      border: 2px solid #ffffff !important;
+    }
+
+    .high-contrast .table th {
+      background-color: #333333 !important;
+      color: #ffffff !important;
+      border: 1px solid #ffffff !important;
+    }
+
+    .high-contrast .table td {
+      border: 1px solid #ffffff !important;
+      color: #ffffff !important;
+    }
+
+    .high-contrast .badge-urgent {
+      background-color: #ff0000 !important;
+      color: #ffffff !important;
+      border: 1px solid #ffffff !important;
+    }
+
+    .high-contrast .badge-soon {
+      background-color: #ffa500 !important;
+      color: #ffffff !important;
+      border: 1px solid #ffffff !important;
+    }
+
+    .high-contrast .badge-routine {
+      background-color: #008000 !important;
+      color: #ffffff !important;
+      border: 1px solid #ffffff !important;
+    }
+
+    .high-contrast .form-control,
+    .high-contrast .form-select {
+      background-color: #000000 !important;
+      color: #ffffff !important;
+      border: 2px solid #ffffff !important;
+    }
+
+    .high-contrast .form-control:focus,
+    .high-contrast .form-select:focus {
+      border-color: #ffff00 !important;
+      box-shadow: none !important;
+    }
+
+    .high-contrast .alert {
+      background-color: #000000 !important;
+      color: #ffffff !important;
+      border: 2px solid #ffffff !important;
+    }
+
+    .high-contrast .alert-link {
+      color: #00b7eb !important;
+    }
+
+    .high-contrast .alert-link:hover {
+      color: #ffff00 !important;
+    }
+
+    .high-contrast .section-title::after {
+      background-color: #ffff00 !important;
+    }
+
+    .high-contrast .search-icon {
+      color: #ffff00 !important;
+    }
+
+    .high-contrast a {
+      color: #00b7eb !important;
+    }
+
+    .high-contrast a:hover {
+      color: #ffff00 !important;
+      text-decoration: underline;
+      text-decoration-color: #ffff00;
+      text-decoration-thickness: 2px;
+    }
+
+    .high-contrast .title {
+      color: #ffffff !important;
+    }
+
+    .high-contrast .text-muted {
+      color: #ffffff !important;
+    }
+
+    .high-contrast .bg-success.bg-opacity-10,
+    .high-contrast .bg-primary.bg-opacity-10,
+    .high-contrast .bg-warning.bg-opacity-10 {
+      background-color: #000000 !important;
+      border: 2px solid #ffffff !important;
+    }
+
+    .high-contrast .text-success {
+      color: #008000 !important;
+    }
+
+    .high-contrast .text-primary {
+      color: #0000ff !important;
+    }
+
+    .high-contrast .text-warning {
+      color: #ffa500 !important;
+    }
+  </style>
+</head>
+
+<body>
+  <%- include('partials/header') %>
+    <main class="container py-4">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="title mb-0">Appointment Management</h2>
+        <div class="text-muted">
+          <i class="fas fa-user-circle me-1"></i>
+          <span>
+            <%= user ? (user.name || user.email) : 'Guest' %>
+          </span>
+        </div>
+      </div>
+
+      <% if (!user || !user.id) { %>
+        <div class="alert alert-warning shadow-sm" role="alert">
+          <i class="fas fa-exclamation-circle me-2"></i>
+          Please <a href="/login" class="alert-link">log in</a> to manage appointments.
+        </div>
+        <% } else { %>
+          <% if (error) { %>
+            <div class="alert alert-danger shadow-sm" role="alert">
+              <i class="fas fa-times-circle me-2"></i>
+              <%= error %>
+            </div>
+            <% } %>
+              <% if (conflicts) { %>
+                <div class="alert alert-warning shadow-sm" role="alert">
+                  <i class="fas fa-calendar-times me-2"></i>
+                  <strong>Schedule Conflict Detected:</strong>
+                  <%= conflicts.map(e=> e.summary).join(', ') %>
+                </div>
+                <% } %>
+
+                  <!-- Notifications Section -->
+                  <% if ((notifications || []).filter(n => n.is_read === false).length > 0) { %>
+                    <div class="card shadow-sm mb-4">
+                      <div class="card-header bg-primary bg-opacity-10">
+                        <h5 class="mb-0 text-primary">
+                          <i class="fas fa-bell me-2"></i>
+                          Notifications
+                        </h5>
+                      </div>
+                      <div class="card-body">
+                        <div class="list-group">
+                          <% (notifications || []).filter(n => n.is_read === false).forEach(notification => { %>
+                            <div class="list-group-item list-group-item-action">
+                              <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">
+                                  <i class="fas fa-info-circle me-2"></i>
+                                  <%= notification.message %>
+                                </h6>
+                                <small class="text-muted">
+                                  <%= new Date(notification.created_at).toLocaleString() %>
+                                </small>
+                              </div>
+                              <small class="text-muted">Status: <%= notification.status %></small>
+                              <form method="POST" action="/api/appointments/mark-notification-read" class="d-none">
+                                <input type="hidden" name="notification_id" value="<%= notification.id %>">
+                              </form>
+                            </div>
+                          <% }) %>
+                        </div>
+                      </div>
+                    </div>
+                  <% } %>
+
+                  <!-- Search/Recommend Card -->
+                  <div class="card shadow-sm mb-4">
+                    <div class="card-header">
+                      <h5 class="mb-0"><i class="fas fa-search me-2"></i>Find Appointments</h5>
+                    </div>
+                    <div class="card-body">
+                      <form id="appointmentForm" action="/api/appointments/availability" method="POST">
+                        <input type="hidden" name="recommend" id="recommend" value="false">
+                        <div class="row g-3">
+                          <div class="col-md-4">
+                            <label for="city" class="form-label">City</label>
+                            <div class="position-relative">
+                              <select class="form-select" id="city" name="city" required data-bs-toggle="tooltip"
+                                title="Select the city for your appointment">
+                                <option value="" disabled <%=!selectedCity ? 'selected' : '' %>>Select a city</option>
+                                <% (cities || []).forEach(city=> { %>
+                                  <option value="<%= city.city %>" <%=selectedCity===city.city ? 'selected' : '' %>><%=
+                                      city.city %>
+                                  </option>
+                                  <% }) %>
+                              </select>
+                              <i class="fas fa-city search-icon"></i>
+                            </div>
+                          </div>
+                          <div class="col-md-4">
+                            <label for="practice_id" class="form-label">Practice</label>
+                            <div class="position-relative">
+                              <select class="form-select" id="practice_id" name="practice_id" data-bs-toggle="tooltip"
+                                title="Choose a specific practice or leave as 'Any Practice'">
+                                <option value="" <%=!selectedPractice ? 'selected' : '' %>>Any Practice</option>
+                                <% (practices || []).forEach(practice => { %>
+                                  <option value="<%= practice.id %>" <%=selectedPractice === practice.id ? 'selected' : '' %>>
+                                    <%= practice.name %> (<%= practice.city %>)
+                                  </option>
+                                  <% }) %>
+                              </select>
+                              <i class="fas fa-clinic-medical search-icon"></i>
+                            </div>
+                          </div>
+                          <div class="col-md-4">
+                            <label for="gp_id" class="form-label">General Practitioner</label>
+                            <div class="position-relative">
+                              <select class="form-select" id="gp_id" name="gp_id" data-bs-toggle="tooltip"
+                                title="Choose a specific GP or leave as 'Any GP'">
+                                <option value="" <%=!selectedGp ? 'selected' : '' %>>Any GP</option>
+                                <% (gps || []).forEach(gp=> { %>
+                                  <option value="<%= gp.id %>" <%=selectedGp==gp.id ? 'selected' : '' %>><%= gp.name %> (<%= gp.specialization || 'General' %>)</option>
+                                  <% }) %>
+                              </select>
+                              <i class="fas fa-user-md search-icon"></i>
+                            </div>
+                          </div>
+                          <div class="col-md-4">
+                            <label for="date" class="form-label">Date</label>
+                            <div class="position-relative">
+                              <input type="date" class="form-control" id="date" name="date"
+                                value="<%= selectedDate || '' %>" required data-bs-toggle="tooltip"
+                                title="Select the date for your appointment">
+                              <i class="fas fa-calendar-day search-icon"></i>
+                            </div>
+                          </div>
+                          <div class="col-md-4">
+                            <label for="preferredTime" class="form-label">Preferred Time</label>
+                            <div class="position-relative">
+                              <input type="time" class="form-control intelligent-only" id="preferredTime" name="preferred_time"
+                                data-bs-toggle="tooltip" title="Optional: Specify a preferred time">
+                              <i class="fas fa-clock search-icon"></i>
+                            </div>
+                          </div>
+                          <div class="col-md-4">
+                            <label for="symptomCategory" class="form-label">Symptom Category</label>
+                            <div class="position-relative">
+                              <select class="form-select" id="symptomCategory" name="symptom_category"
+                                data-bs-toggle="tooltip" title="Select the main category of your symptoms">
+                                <option value="" <%= !selectedSymptom ? 'selected' : '' %>>
+                                  Select symptom category
+                                </option>
+                                <option value="Pain" <%= selectedSymptom === 'Pain' ? 'selected' : '' %>>
+                                  Bone or Joint Issues (e.g., joint pain, fractures)
+                                </option>
+                                <option value="Respiratory" <%= selectedSymptom === 'Respiratory' ? 'selected' : '' %>>
+                                  Chest or Respiratory Issues (e.g., cough, shortness of breath)
+                                </option>
+                                <option value="Digestive" <%= selectedSymptom === 'Digestive' ? 'selected' : '' %>>
+                                  Stomach or Digestive Issues (e.g., nausea, abdominal pain)
+                                </option>
+                                <option value="Fever" <%= selectedSymptom === 'Fever' ? 'selected' : '' %>>
+                                  Fever
+                                </option>
+                                <option value="Skin" <%= selectedSymptom === 'Skin' ? 'selected' : '' %>>
+                                  Skin Issues (e.g., rash, irritation)
+                                </option>
+                                <option value="Other" <%= selectedSymptom === 'Other' ? 'selected' : '' %>>
+                                  Other
+                                </option>
+                              </select>
+                              <i class="fas fa-stethoscope search-icon"></i>
+                            </div>
+                          </div>
+                          <div class="col-md-4">
+                            <label for="symptomDuration" class="form-label">Symptom Duration</label>
+                            <div class="position-relative">
+                              <select class="form-select intelligent-only" id="symptomDuration" name="symptom_duration"
+                                data-bs-toggle="tooltip" title="How long have you had these symptoms?">
+                                <option value="" disabled selected>Select duration</option>
+                                <option value="<1 day">Less than 1 day</option>
+                                <option value="1-3 days">1-3 days</option>
+                                <option value=">3 days">More than 3 days</option>
+                              </select>
+                              <i class="fas fa-hourglass-half search-icon"></i>
+                            </div>
+                          </div>
+                          <div class="col-12">
+                            <label class="form-label">Red Flag Symptoms</label>
+                            <div class="form-check">
+                              <input class="form-check-input intelligent-only" type="checkbox" id="redFlagSeverePain"
+                                name="red_flags[severe_pain]" value="true" data-bs-toggle="tooltip"
+                                title="E.g., chest pain, severe headache">
+                              <label class="form-check-label" for="redFlagSeverePain">Severe Pain</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input intelligent-only" type="checkbox" id="redFlagBreathing"
+                                name="red_flags[breathing]" value="true" data-bs-toggle="tooltip"
+                                title="E.g., shortness of breath, wheezing">
+                              <label class="form-check-label" for="redFlagBreathing">Difficulty Breathing</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input intelligent-only" type="checkbox" id="redFlagFever"
+                                name="red_flags[high_fever]" value="true" data-bs-toggle="tooltip"
+                                title="E.g., fever above 39°C/102°F">
+                              <label class="form-check-label" for="redFlagFever">High Fever</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input intelligent-only" type="checkbox" id="redFlagOther" name="red_flags[other]"
+                                value="true" data-bs-toggle="tooltip" title="Any other critical symptoms">
+                              <label class="form-check-label" for="redFlagOther">Other Critical Symptoms</label>
+                            </div>
+                          </div>
+                          <div class="col-12">
+                            <small class="text-muted">
+                              Preferred Time, Symptom Duration and Red Flag Symptoms are used only when Intelligent Scheduling is enabled.
+                            </small>
+                          </div>
+                          <div class="col-12">
+                            <div class="form-check form-switch">
+                              <input class="form-check-input" type="checkbox" id="recommendToggle" <%=recommended
+                                ? 'checked' : '' %>>
+                              <label class="form-check-label" for="recommendToggle" data-bs-toggle="tooltip"
+                                title="Enable intelligent scheduling to prioritize based on symptoms">Enable Intelligent
+                                Scheduling</label>
+                              <small class="text-muted ms-2">(Considers your symptoms and urgency)</small>
+                            </div>
+                          </div>
+                          <div class="col-12">
+                            <button type="submit" class="btn btn-primary px-4">
+                              <i class="fas fa-search me-2"></i>Find Appointments
+                            </button>
+                          </div>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+
+                  <!-- Available Appointments Section -->
+                  <% if ((appointments || []).filter(appt => !appt.is_booked).length > 0) { %>
+                    <div class="card shadow-sm mb-4">
+                      <div class="card-header bg-success bg-opacity-10">
+                        <h5 class="mb-0 text-success">
+                          <i class="fas fa-calendar-check me-2"></i>
+                          <%= recommended ? 'Recommended Appointments' : 'Available Appointments' %>
+                        </h5>
+                      </div>
+                      <div class="card-body p-0">
+                        <div class="table-responsive">
+                          <table class="table table-hover mb-0">
+                            <thead>
+                              <tr>
+                                <th width="20%">GP</th>
+                                <th width="15%">Practice</th>
+                                <th width="15%">Location</th>
+                                <th width="20%">Date & Time</th>
+                                <th width="15%">Specialization</th>
+                                <% if (recommended) { %>
+                                  <th width="15%">Urgency</th>
+                                  <% } %>
+                                    <th width="<%= recommended ? '15%' : '30%' %>">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <% (appointments || []).filter(appt => !appt.is_booked).forEach(appt => { %>
+                                <tr>
+                                  <td>
+                                    <div class="d-flex align-items-center">
+                                      <div class="flex-shrink-0">
+                                        <i class="fas fa-user-md text-primary me-2"></i>
+                                      </div>
+                                      <div class="flex-grow-1 ms-2">
+                                        <%= appt.gp_name %>
+                                          <% if (recommended) { %>
+                                            <span class="badge bg-success ms-2">Recommended</span>
+                                            <% } %>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td><i class="fas fa-clinic-medical text-muted me-2"></i>
+                                    <%= appt.practice_name %>
+                                  </td>
+                                  <td><i class="fas fa-map-marker-alt text-muted me-2"></i>
+                                    <%= appt.city %>
+                                  </td>
+                                  <td>
+                                    <i class="fas fa-clock text-muted me-2"></i>
+                                    <%= new Date(appt.start_time).toLocaleDateString() %>
+                                      <br>
+                                      <small class="text-muted">
+                                        <%= new Date(appt.start_time).toLocaleTimeString([], {hour: '2-digit' ,
+                                          minute:'2-digit'}) %> - <%= new Date(appt.end_time).toLocaleTimeString([],
+                                            {hour: '2-digit' , minute:'2-digit'}) %>
+                                      </small>
+                                  </td>
+                                  <td>
+                                    <%= appt.specialization || 'General' %>
+                                  </td>
+                                  <% if (recommended) { %>
+                                    <td>
+                                      <span
+                                        class="badge badge-<%= appt.urgency ? appt.urgency.toLowerCase() : 'routine' %>">
+                                        <%= appt.urgency || 'Routine' %>
+                                      </span>
+                                    </td>
+                                    <% } %>
+                                      <td class="appointment-actions">
+                                        <form method="POST" action="/api/appointments/book" class="d-inline">
+                                          <input type="hidden" name="appointment_id" value="<%= appt.id %>">
+                                          <button type="submit" class="btn btn-sm btn-primary" data-bs-toggle="tooltip"
+                                            title="Book this appointment">
+                                            <i class="fas fa-calendar-check me-1"></i>Book
+                                          </button>
+                                        </form>
+                                        <form method="POST" action="/api/appointments/check-conflicts" class="d-inline">
+                                          <input type="hidden" name="start_time" value="<%= appt.start_time %>">
+                                          <input type="hidden" name="end_time" value="<%= appt.end_time %>">
+                                          <button type="submit" class="btn btn-sm btn-outline-primary"
+                                            data-bs-toggle="tooltip" title="Check for scheduling conflicts">
+                                            <i class="fas fa-calendar-times me-1"></i>Check Conflict
+                                          </button>
+                                        </form>
+                                        <form method="POST" action="/api/calendar/sync" class="d-inline">
+                                          <input type="hidden" name="appointment_id" value="<%= appt.id %>">
+                                          <button type="submit" class="btn btn-sm btn-outline-primary"
+                                            data-bs-toggle="tooltip" title="Sync with Google Calendar">
+                                            <i class="fas fa-sync me-1"></i>Sync
+                                          </button>
+                                        </form>
+                                      </td>
+                                </tr>
+                                <% }) %>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                    <% } else if (!error) { %>
+                      <div class="alert alert-info shadow-sm">
+                        <i class="fas fa-info-circle me-2"></i>
+                        No available appointments found. Try adjusting your search criteria or enabling intelligent
+                        scheduling.
+                      </div>
+                      <% } %>
+
+                        <!-- My Booked Appointments Section -->
+                        <% if ((appointments || []).filter(appt=> appt.is_booked && appt.user_id === user.id && new
+                          Date(appt.start_time) >= new Date().setHours(0, 0, 0, 0)).length > 0) { %>
+                          <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-primary bg-opacity-10">
+                              <h5 class="mb-0 text-primary">
+                                <i class="fas fa-calendar-alt me-2"></i>
+                                My Upcoming Appointments
+                              </h5>
+                            </div>
+                            <div class="card-body p-0">
+                              <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                  <thead>
+                                    <tr>
+                                      <th width="20%">GP</th>
+                                      <th width="15%">Practice</th>
+                                      <th width="15%">Location</th>
+                                      <th width="20%">Date & Time</th>
+                                      <th width="15%">Specialization</th>
+                                      <th width="15%">Actions</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    <% (appointments || []).filter(appt=> appt.is_booked && appt.user_id === user.id &&
+                                      new Date(appt.start_time) >= new Date().setHours(0, 0, 0, 0)).forEach(appt => { %>
+                                      <tr>
+                                        <td>
+                                          <div class="d-flex align-items-center">
+                                            <div class="flex-shrink-0">
+                                              <i class="fas fa-user-md text-primary me-2"></i>
+                                            </div>
+                                            <div class="flex-grow-1 ms-2">
+                                              <%= appt.gp_name %>
+                                            </div>
+                                          </div>
+                                        </td>
+                                        <td><i class="fas fa-clinic-medical text-muted me-2"></i>
+                                          <%= appt.practice_name %>
+                                        </td>
+                                        <td><i class="fas fa-map-marker-alt text-muted me-2"></i>
+                                          <%= appt.city %>
+                                        </td>
+                                        <td>
+                                          <i class="fas fa-clock text-muted me-2"></i>
+                                          <%= new Date(appt.start_time).toLocaleDateString() %>
+                                            <br>
+                                            <small class="text-muted">
+                                              <%= new Date(appt.start_time).toLocaleTimeString([], {hour: '2-digit' ,
+                                                minute:'2-digit'}) %> - <%= new
+                                                  Date(appt.end_time).toLocaleTimeString([], {hour: '2-digit' ,
+                                                  minute:'2-digit'}) %>
+                                            </small>
+                                        </td>
+                                        <td>
+                                          <%= appt.specialization || 'General' %>
+                                        </td>
+                                        <td class="appointment-actions">
+                                          <form method="POST" action="/api/appointments/cancel" class="d-inline">
+                                            <input type="hidden" name="appointment_id" value="<%= appt.id %>">
+                                            <button type="submit" class="btn btn-sm btn-danger" data-bs-toggle="tooltip"
+                                              title="Cancel this appointment">
+                                              <i class="fas fa-trash me-1"></i>Cancel
+                                            </button>
+                                          </form>
+                                          <form method="POST" action="/api/appointments/check-conflicts"
+                                            class="d-inline">
+                                            <input type="hidden" name="start_time" value="<%= appt.start_time %>">
+                                            <input type="hidden" name="end_time" value="<%= appt.end_time %>">
+                                            <button type="submit" class="btn btn-sm btn-outline-primary"
+                                              data-bs-toggle="tooltip" title="Check for scheduling conflicts">
+                                              <i class="fas fa-calendar-times me-1"></i>Check Conflict
+                                            </button>
+                                          </form>
+                                          <form method="POST" action="/api/calendar/sync" class="d-inline">
+                                            <input type="hidden" name="appointment_id" value="<%= appt.id %>">
+                                            <button type="submit" class="btn btn-sm btn-outline-primary"
+                                              data-bs-toggle="tooltip" title="Sync with Google Calendar">
+                                              <i class="fas fa-sync me-1"></i>Sync
+                                            </button>
+                                          </form>
+                                        </td>
+                                      </tr>
+                                      <% }) %>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </div>
+                          <% } %>
+
+                            <!-- Swap Appointments Section -->
+<div class="card shadow-sm">
+  <div class="card-header bg-warning bg-opacity-10">
+    <h5 class="mb-0 text-warning">
+      <i class="fas fa-exchange-alt me-2"></i>
+      Appointment Swap Requests
+    </h5>
+  </div>
+
+  <div class="card-body">
+    <form method="POST" action="/api/appointments/swap" id="swapForm">
+      <div class="row g-3">
+
+        <div class="col-md-6">
+          <label for="myAppointment" class="form-label">
+            Your Appointment
+          </label>
+
+          <select
+            class="form-select"
+            id="myAppointment"
+            name="my_appointment_id"
+            required
+            data-bs-toggle="tooltip"
+            title="Select your booked appointment"
+          >
+            <option value="" disabled selected>
+              Loading your appointments...
+            </option>
+          </select>
+        </div>
+
+        <div class="col-md-6">
+          <label for="targetAppointment" class="form-label">
+            Target Appointment
+          </label>
+
+          <select
+            class="form-select"
+            id="targetAppointment"
+            name="target_appointment_id"
+            required
+            disabled
+            data-bs-toggle="tooltip"
+            title="Select the appointment you want to swap with"
+          >
+            <option value="" disabled selected>
+              Select your appointment first
+            </option>
+          </select>
+        </div>
+
+        <div class="col-12">
+          <button
+            type="submit"
+            class="btn btn-warning"
+            id="swapSubmitButton"
+            disabled
+            data-bs-toggle="tooltip"
+            title="Submit a swap request"
+          >
+            <i class="fas fa-exchange-alt me-2"></i>
+            Request Swap
+          </button>
+        </div>
+
+      </div>
+    </form>
+
+    <div
+      id="swapMessage"
+      class="alert alert-info mt-3 d-none"
+      role="alert"
+    ></div>
+  </div>
+</div>
+
+<!-- Logout Button -->
+                            <div class="mt-4">
+                              <a href="/api/users/logout" class="btn btn-outline-danger" data-bs-toggle="tooltip"
+                                title="Log out of your account"><i class="fas fa-sign-out-alt me-2"></i>Logout</a>
+                            </div>
+                            <% } %>
+    </main>
+    <%- include('partials/footer') %>
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+      <script>
+        // Apply high contrast mode from localStorage
+        document.addEventListener('DOMContentLoaded', () => {
+          if (localStorage.getItem('highContrast') === 'true') {
+            document.body.classList.add('high-contrast');
+            document.body.style.backgroundColor = '#000000';
+            console.log('High contrast mode enabled: body background set to #000000');
+          }
+
+          // Automatically mark notifications as read
+          const notificationForms = document.querySelectorAll('form[action="/api/appointments/mark-notification-read"]');
+          notificationForms.forEach(form => {
+            const formData = new URLSearchParams();
+            const notificationId = form.querySelector('input[name="notification_id"]').value;
+            formData.append('notification_id', notificationId);
+
+            fetch('/api/appointments/mark-notification-read', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+              },
+              body: formData
+            }).then(response => {
+              if (!response.ok) {
+                console.error('Failed to mark notification as read:', notificationId);
+              }
+            }).catch(error => {
+              console.error('Error marking notification as read:', error);
+            });
+          });
+        });
+
+        // Initialize tooltips
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+
+        // Update form action and hidden input based on recommend toggle
+        const form = document.getElementById('appointmentForm');
+        const recommendToggle = document.getElementById('recommendToggle');
+        const recommendInput = document.getElementById('recommend');
+        const submitButton = form.querySelector('button[type="submit"]');
+        const citySelect = document.getElementById('city');
+        const practiceSelect = document.getElementById('practice_id');
+        const allPractices = <%- JSON.stringify(practices || []) %>;
+
+        function updateFormAction() {
+          const intelligentFields =
+            document.querySelectorAll('.intelligent-only');
+
+          if (recommendToggle.checked) {
+            form.action = '/api/appointments/recommend';
+            recommendInput.value = 'true';
+            submitButton.innerHTML =
+              '<i class="fas fa-brain me-2"></i>Get Recommendations';
+
+            intelligentFields.forEach(field => {
+              field.disabled = false;
+            });
+          } else {
+            form.action = '/api/appointments/availability';
+            recommendInput.value = 'false';
+            submitButton.innerHTML =
+              '<i class="fas fa-search me-2"></i>Find Appointments';
+
+            intelligentFields.forEach(field => {
+              field.disabled = true;
+            });
+          }
+        }
+
+        // Filter practices based on selected city
+        function updatePracticeOptions() {
+          const selectedCity = citySelect.value;
+          const practiceOptions = allPractices.filter(practice => !selectedCity || practice.city === selectedCity);
+          practiceSelect.innerHTML = '<option value="" <%= !selectedPractice ? "selected" : "" %>>Any Practice</option>';
+          practiceOptions.forEach(practice => {
+            const option = document.createElement('option');
+            option.value = practice.id;
+            option.textContent = `${practice.name} (${practice.city})`;
+            if (practice.id === '<%= selectedPractice %>') {
+              option.selected = true;
+            }
+            practiceSelect.appendChild(option);
+          });
+        }
+
+        // Load swap appointments independently from the search results
+const myAppointmentSelect =
+  document.getElementById('myAppointment');
+
+const targetAppointmentSelect =
+  document.getElementById('targetAppointment');
+
+const swapSubmitButton =
+  document.getElementById('swapSubmitButton');
+
+const swapMessage =
+  document.getElementById('swapMessage');
+
+function formatSwapAppointment(appt) {
+  const date = new Date(appt.start_time);
+
+  const dateText = date.toLocaleDateString();
+  const timeText = date.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  return `${appt.gp_name} (${appt.specialization || 'General'}) - ` +
+    `${appt.practice_name} (${appt.city}) - ${dateText} ${timeText}`;
+}
+
+function showSwapMessage(message, type = 'info') {
+  if (!swapMessage) {
+    return;
+  }
+
+  swapMessage.className = `alert alert-${type} mt-3`;
+  swapMessage.textContent = message;
+}
+
+function hideSwapMessage() {
+  if (!swapMessage) {
+    return;
+  }
+
+  swapMessage.className = 'alert alert-info mt-3 d-none';
+  swapMessage.textContent = '';
+}
+
+async function loadMySwapAppointments() {
+  if (!myAppointmentSelect) {
+    return;
+  }
+
+  myAppointmentSelect.innerHTML = `
+    <option value="" disabled selected>
+      Loading your appointments...
+    </option>
+  `;
+
+  targetAppointmentSelect.disabled = true;
+  swapSubmitButton.disabled = true;
+
+  try {
+    const response = await fetch('/api/appointments/swap-options');
+
+    if (!response.ok) {
+      throw new Error('Unable to load your appointments');
+    }
+
+    const data = await response.json();
+    const appointments = data.appointments || [];
+
+    myAppointmentSelect.innerHTML = `
+      <option value="" disabled selected>
+        Select Your Appointment
+      </option>
+    `;
+
+    if (appointments.length === 0) {
+      const option = document.createElement('option');
+      option.value = '';
+      option.disabled = true;
+      option.textContent = 'No upcoming booked appointments';
+
+      myAppointmentSelect.appendChild(option);
+
+      showSwapMessage(
+        'You need an upcoming booked appointment before you can request a swap.',
+        'warning'
+      );
+
+      return;
+    }
+
+    appointments.forEach(appt => {
+      const option = document.createElement('option');
+
+      option.value = appt.id;
+      option.dataset.city = appt.city;
+      option.textContent = formatSwapAppointment(appt);
+
+      myAppointmentSelect.appendChild(option);
+    });
+
+    hideSwapMessage();
+  } catch (error) {
+    console.error('Error loading your swap appointments:', error);
+
+    myAppointmentSelect.innerHTML = `
+      <option value="" disabled selected>
+        Unable to load appointments
+      </option>
+    `;
+
+    showSwapMessage(
+      'Unable to load your appointments for swapping.',
+      'danger'
+    );
+  }
+}
+
+async function updateTargetAppointments() {
+  if (!myAppointmentSelect || !targetAppointmentSelect) {
+    return;
+  }
+
+  const selectedOption =
+    myAppointmentSelect.options[myAppointmentSelect.selectedIndex];
+
+  const selectedAppointmentId =
+    myAppointmentSelect.value;
+
+  const selectedCity =
+    selectedOption?.dataset?.city || '';
+
+  targetAppointmentSelect.innerHTML = `
+    <option value="" disabled selected>
+      Loading target appointments...
+    </option>
+  `;
+
+  targetAppointmentSelect.disabled = true;
+  swapSubmitButton.disabled = true;
+  hideSwapMessage();
+
+  if (!selectedAppointmentId || !selectedCity) {
+    targetAppointmentSelect.innerHTML = `
+      <option value="" disabled selected>
+        Select your appointment first
+      </option>
+    `;
+    return;
+  }
+
+  try {
+    const params = new URLSearchParams({
+      city: selectedCity,
+      exclude_id: selectedAppointmentId
+    });
+
+    const response = await fetch(
+      `/api/appointments/swap-targets?${params.toString()}`
+    );
+
+    if (!response.ok) {
+      throw new Error('Unable to load target appointments');
+    }
+
+    const data = await response.json();
+    const appointments = data.appointments || [];
+
+    targetAppointmentSelect.innerHTML = `
+      <option value="" disabled selected>
+        Select Target Appointment
+      </option>
+    `;
+
+    if (appointments.length === 0) {
+      const option = document.createElement('option');
+
+      option.value = '';
+      option.disabled = true;
+      option.textContent = 'No matching appointments available';
+
+      targetAppointmentSelect.appendChild(option);
+
+      showSwapMessage(
+        `There are no other users' booked appointments available in ${selectedCity}.`,
+        'info'
+      );
+
+      return;
+    }
+
+    appointments.forEach(appt => {
+      const option = document.createElement('option');
+
+      option.value = appt.id;
+      option.dataset.city = appt.city;
+      option.textContent = formatSwapAppointment(appt);
+
+      targetAppointmentSelect.appendChild(option);
+    });
+
+    targetAppointmentSelect.disabled = false;
+    hideSwapMessage();
+  } catch (error) {
+    console.error('Error loading target appointments:', error);
+
+    targetAppointmentSelect.innerHTML = `
+      <option value="" disabled selected>
+        Unable to load target appointments
+      </option>
+    `;
+
+    showSwapMessage(
+      'Unable to load target appointments. Please try again.',
+      'danger'
+    );
+  }
+}
+
+myAppointmentSelect?.addEventListener(
+  'change',
+  updateTargetAppointments
+);
+
+targetAppointmentSelect?.addEventListener(
+  'change',
+  () => {
+    swapSubmitButton.disabled =
+      !targetAppointmentSelect.value;
+  }
+);
+
+citySelect.addEventListener('change', updatePracticeOptions);
+        recommendToggle.addEventListener('change', updateFormAction);
+
+        // Set initial form action and practice options on page load
+        updateFormAction();
+        updatePracticeOptions();
+        loadMySwapAppointments();
+
+        // Prevent default form submission and handle manually
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          const city = document.getElementById('city').value;
+          const date = document.getElementById('date').value;
+          if (!city || !date) {
+            alert('Please select a city and date.');
+            return;
+          }
+          const formData = new URLSearchParams();
+          formData.append('city', city);
+          formData.append('practice_id', document.getElementById('practice_id').value);
+          formData.append('date', date);
+          formData.append('gp_id', document.getElementById('gp_id').value);
+          formData.append('preferred_time', recommendToggle.checked ? document.getElementById('preferredTime').value : '');
+          formData.append('symptom_category', document.getElementById('symptomCategory').value);
+          formData.append('symptom_duration', recommendToggle.checked ? document.getElementById('symptomDuration').value : '');
+          formData.append('red_flags[severe_pain]', recommendToggle.checked && document.getElementById('redFlagSeverePain').checked);
+          formData.append('red_flags[breathing]', recommendToggle.checked && document.getElementById('redFlagBreathing').checked);
+          formData.append('red_flags[high_fever]', recommendToggle.checked && document.getElementById('redFlagFever').checked);
+          formData.append('red_flags[other]', recommendToggle.checked && document.getElementById('redFlagOther').checked);
+          formData.append('recommend', recommendInput.value);
+
+          fetch(form.action, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: formData
+          }).then(response => {
+            if (response.ok) {
+              return response.text();
+            } else {
+              throw new Error('Request failed with status ' + response.status);
+            }
+          }).then(html => {
+            document.open();
+            document.write(html);
+            document.close();
+          }).catch(error => {
+            console.error('Fetch error:', error);
+            alert('Error processing request: ' + error.message);
+          });
+        });
+
+        // Client-side validation for swap form
+        document.getElementById('swapForm')?.addEventListener('submit', function (e) {
+          const myAppt = document.getElementById('myAppointment')?.value;
+          const targetAppt = document.getElementById('targetAppointment')?.value;
+
+          if (!myAppt || !targetAppt) {
+            e.preventDefault();
+            alert('Please select both appointments.');
+            return;
+          }
+
+          if (String(myAppt) === String(targetAppt)) {
+            e.preventDefault();
+            alert('Cannot swap with the same appointment.');
+          }
+        });
+
+        // Auto-refresh appointments every 30 seconds
+        function refreshAppointments() {
+          const city = document.getElementById('city').value;
+          const practice_id = document.getElementById('practice_id').value;
+          const date = document.getElementById('date').value;
+          const gp_id = document.getElementById('gp_id').value;
+          const symptom_category = document.getElementById('symptomCategory').value;
+          if (city && date) {
+            fetch(`/api/appointments/availability?city=${encodeURIComponent(city)}&practice_id=${encodeURIComponent(practice_id)}&date=${encodeURIComponent(date)}&gp_id=${encodeURIComponent(gp_id)}&symptom_category=${encodeURIComponent(symptom_category)}`)
+              .then(response => response.text())
+              .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newAppointments = doc.querySelector('.table-responsive');
+                if (newAppointments) {
+                  document.querySelector('.table-responsive')?.replaceWith(newAppointments);
+                }
+              });
+          }
+        }
+        setInterval(refreshAppointments, 30000);
+      </script>
+</body>
+
+</html>

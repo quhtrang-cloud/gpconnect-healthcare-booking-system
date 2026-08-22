@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feedback - GP Connect</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="/css/styles.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4a6fa5;
+      --secondary: #166088;
+      --accent: #4fc3f7;
+      --light: #f8f9fa;
+      --dark: #212529;
+    }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--light);
+    }
+    .section-title {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 2rem;
+    }
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 3px;
+      background-color: var(--accent);
+    }
+    .card {
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    .btn-primary {
+      background-color: var(--primary);
+      border-color: var(--primary);
+      padding: 0.75rem 1.5rem;
+      font-weight: 500;
+      border-radius: 8px;
+    }
+    .btn-primary:hover {
+      background-color: var(--secondary);
+      border-color: var(--secondary);
+    }
+    .form-control, .form-select {
+      border-radius: 8px;
+      border-color: #ced4da;
+      transition: border-color 0.3s ease;
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 8px rgba(79, 195, 247, 0.3);
+    }
+    .table {
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .table th {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+    }
+    .table td {
+      vertical-align: middle;
+    }
+    .table-hover tbody tr:hover {
+      background-color: rgba(79, 195, 247, 0.1);
+    }
+    .alert {
+      border-radius: 8px;
+      border-left: 4px solid;
+    }
+    .alert-warning {
+      border-color: #ffca2c;
+    }
+    .alert-danger {
+      border-color: #dc3545;
+    }
+    .star-rating .fa-star {
+      color: #ffca2c;
+    }
+    .star-rating .fa-star.fa-regular {
+      color: #ced4da;
+    }
+    /* High Contrast Overrides */
+    .high-contrast body {
+      background-color: #000000 !important;
+      color: #ffffff !important;
+    }
+    .high-contrast .section-title {
+      color: #ffffff !important;
+    }
+    .high-contrast .section-title::after {
+      background-color: #ffff00 !important;
+    }
+    .high-contrast .card {
+      background-color: #000000 !important;
+      border: 2px solid #ffffff !important;
+      color: #ffffff !important;
+      box-shadow: none !important;
+    }
+    .high-contrast .card-header {
+      background-color: #0000ff !important;
+      color: #ffffff !important;
+      border-bottom: 2px solid #ffffff !important;
+    }
+    .high-contrast .btn-primary {
+      background-color: #0000ff !important;
+      border-color: #ffffff !important;
+      color: #ffffff !important;
+    }
+    .high-contrast .btn-primary:hover {
+      background-color: #000099 !important;
+      color: #ffff00 !important;
+    }
+    .high-contrast .form-control, .high-contrast .form-select {
+      background-color: #000000 !important;
+      color: #ffffff !important;
+      border: 2px solid #ffffff !important;
+    }
+    .high-contrast .form-control:focus, .high-contrast .form-select:focus {
+      border-color: #ffff00 !important;
+      box-shadow: none !important;
+    }
+    .high-contrast .table {
+      background-color: #000000 !important;
+      color: #ffffff !important;
+      border: 2px solid #ffffff !important;
+    }
+    .high-contrast .table th {
+      background-color: #0000ff !important;
+      color: #ffffff !important;
+      border: 1px solid #ffffff !important;
+    }
+    .high-contrast .table td {
+      background-color: #000000;
+      border: 1px solid #ffffff !important;
+      color: #ffffff !important;
+    }
+    .high-contrast .table-hover tbody tr:hover {
+      background-color: rgba(255, 255, 0, 0.2) !important;
+    }
+    .high-contrast .alert {
+      background-color: #000000 !important;
+      color: #ffffff !important;
+      border-color: #ffffff !important;
+    }
+    .high-contrast .alert-warning {
+      border-left-color: #ffa500 !important; /* Orange for warning */
+    }
+    .high-contrast .alert-danger {
+      border-left-color: #ff0000 !important; /* Red for danger */
+    }
+    .high-contrast .alert-link {
+      color: #00b7eb !important;
+    }
+    .high-contrast .alert-link:hover {
+      color: #ffff00 !important;
+      text-decoration: underline;
+      text-decoration-color: #ffff00;
+      text-decoration-thickness: 2px;
+    }
+    .high-contrast .star-rating .fa-star {
+      color: #ffa500 !important; /* Orange for stars */
+    }
+    .high-contrast .star-rating .fa-star.fa-regular {
+      color: #ffffff !important;
+    }
+    .high-contrast a {
+      color: #00b7eb !important;
+    }
+    .high-contrast a:hover {
+      color: #ffff00 !important;
+      text-decoration: underline;
+      text-decoration-color: #ffff00;
+      text-decoration-thickness: 2px;
+    }
+  </style>
+</head>
+<body>
+  <%- include('partials/header') %>
+  <main class="container py-5">
+    <h2 class="text-center section-title mb-5">Share Your Feedback</h2>
+
+    <% if (!user || !user.id) { %>
+      <div class="alert alert-warning" role="alert">
+        Please <a href="/login" class="alert-link">log in</a> to view or submit feedback.
+      </div>
+    <% } else { %>
+      <% if (error) { %>
+        <div class="alert alert-danger" role="alert"><%= error %></div>
+      <% } %>
+
+      <!-- Feedback Submission Form (Users Only) -->
+      <% if (user.role === 'user') { %>
+        <div class="card shadow mb-5">
+          <div class="card-header bg-light">
+            <h5 class="mb-0">Submit Feedback</h5>
+          </div>
+          <div class="card-body">
+            <% if (appointments && appointments.length > 0) { %>
+              <form method="POST" action="/api/appointments/feedback">
+                <div class="mb-3">
+                  <label for="appointment_id" class="form-label">Select Appointment</label>
+                  <select class="form-select" id="appointment_id" name="appointment_id" required>
+                    <option value="" disabled selected>Select an appointment</option>
+                    <% appointments.forEach(appt => { %>
+                      <option value="<%= appt.id %>"><%= appt.gp_name %> - <%= new Date(appt.start_time).toLocaleString() %></option>
+                    <% }) %>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label for="rating" class="form-label">Rating (1-5)</label>
+                  <input type="number" class="form-control" id="rating" name="rating" min="1" max="5" required>
+                </div>
+                <div class="mb-3">
+                  <label for="comments" class="form-label">Comments (Optional)</label>
+                  <textarea class="form-control" id="comments" name="comments" rows="4" placeholder="Share your experience..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-star me-2"></i>Submit Feedback</button>
+              </form>
+            <% } else { %>
+              <p>No booked appointments available to provide feedback for.</p>
+            <% } %>
+          </div>
+        </div>
+      <% } %>
+
+      <!-- Feedback List -->
+      <div class="card shadow">
+        <div class="card-header bg-light">
+          <h5 class="mb-0"><%= user.role === 'user' ? 'Your Feedback' : 'All Feedback' %></h5>
+        </div>
+        <div class="card-body">
+          <% if (feedback && feedback.length > 0) { %>
+            <div class="table-responsive rounded">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Appointment</th>
+                    <th>Rating</th>
+                    <th>Comments</th>
+                    <% if (user.role !== 'user') { %>
+                      <th>User</th>
+                    <% } %>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% feedback.forEach(fb => { %>
+                    <tr>
+                      <td><%= fb.gp_name %> - <%= new Date(fb.start_time).toLocaleString() %></td>
+                      <td>
+                        <span class="star-rating">
+                          <% for (let i = 1; i <= 5; i++) { %>
+                            <i class="fa-star <%= i <= fb.rating ? 'fas' : 'far' %>"></i>
+                          <% } %>
+                        </span>
+                        <%= fb.rating %>/5
+                      </td>
+                      <td><%= fb.comments || 'No comments' %></td>
+                      <% if (user.role !== 'user') { %>
+                        <td><%= fb.user_name %></td>
+                      <% } %>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <p>No feedback available.</p>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+  </main>
+  <%- include('partials/footer') %>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Apply high contrast mode from localStorage
+    document.addEventListener('DOMContentLoaded', () => {
+      if (localStorage.getItem('highContrast') === 'true') {
+        document.body.classList.add('high-contrast');
+      }
+    });
+
+    // Initialize tooltips
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+  </script>
+  <script>
+  // Check for high contrast mode in localStorage and apply styles
+  document.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('highContrast') === 'true') {
+      document.body.classList.add('high-contrast');
+      document.body.style.backgroundColor = '#000000';
+      console.log('High contrast mode enabled: body background set to #000000');
+    }
+  });
+</script>
+
+</body>
+</html>

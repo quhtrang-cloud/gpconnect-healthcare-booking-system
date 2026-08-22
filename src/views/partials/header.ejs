@@ -1,0 +1,153 @@
+<nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, #166088 0%, #4a6fa5 100%);">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center" href="/">
+      <i class="fas fa-calendar-check me-2"></i>
+      <span class="fw-bold">GPConnect</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <% if (user && user.id) { %>
+          <% if (user.role === 'user') { %>
+            <li class="nav-item">
+              <a class="nav-link d-flex align-items-center" href="/appointments">
+                <i class="fas fa-calendar-alt me-2"></i>
+                <span>Appointments</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link d-flex align-items-center" href="/preferences">
+                <i class="fas fa-cog me-2"></i>
+                <span>Preferences</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link d-flex align-items-center" href="/feedback">
+                <i class="fas fa-star me-2"></i>
+                <span>Feedback</span>
+              </a>
+            </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-user-circle me-2"></i>
+                <span>Account</span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                <li><a class="dropdown-item" href="/profile"><i class="fas fa-user me-2"></i>Profile</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="/api/users/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+              </ul>
+            </li>
+          <% } else if (user.role === 'admin') { %>
+            <li class="nav-item">
+              <a class="nav-link d-flex align-items-center" href="/api/admin/dashboard">
+                <i class="fas fa-user-shield me-2"></i>
+                <span>Dashboard</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link d-flex align-items-center" href="/feedback">
+                <i class="fas fa-star me-2"></i>
+                <span>Feedback</span>
+              </a>
+            </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-user-cog me-2"></i>
+                <span>Admin</span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminDropdown">
+                <li><a class="dropdown-item" href="/api/users/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+              </ul>
+            </li>
+          <% } else if (user.role === 'gp') { %>
+            <li class="nav-item">
+              <a class="nav-link d-flex align-items-center" href="/gp">
+                <i class="fas fa-user-md me-2"></i>
+                <span>Dashboard</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link d-flex align-items-center" href="/feedback">
+                <i class="fas fa-star me-2"></i>
+                <span>Feedback</span>
+              </a>
+            </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="gpDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-stethoscope me-2"></i>
+                <span>GP Account</span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="gpDropdown">
+                <li><a class="dropdown-item" href="/api/users/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+              </ul>
+            </li>
+          <% } %>
+        <% } else { %>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" href="/login">
+              <i class="fas fa-sign-in-alt me-2"></i>
+              <span>Login</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="btn btn-outline-light ms-2 px-3" href="/register">
+              <i class="fas fa-user-plus me-2"></i>
+              <span>Register</span>
+            </a>
+          </li>
+        <% } %>
+        <!-- Contrast Mode Toggle -->
+        <li class="nav-item">
+          <button class="nav-link btn btn-link d-flex align-items-center" id="highContrastToggle" title="Toggle Contrast Mode">
+            <i class="fas fa-eye me-2"></i>
+            <span>Contrast Mode</span>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<!-- Bootstrap JS and Contrast Mode Script -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Contrast Mode Toggle and Dropdown Background
+  document.addEventListener('DOMContentLoaded', () => {
+    const toggleButton = document.getElementById('highContrastToggle');
+    const body = document.body;
+    const dropdownMenus = document.querySelectorAll('.dropdown-menu');
+    const isHighContrast = localStorage.getItem('highContrast') === 'true';
+
+    // Function to update dropdown menu background
+    function updateDropdownBackground() {
+      const isContrastMode = body.classList.contains('high-contrast');
+      dropdownMenus.forEach(menu => {
+        menu.style.backgroundColor = isContrastMode ? '#ffffff' : '';
+      });
+    }
+
+    // Apply contrast mode and dropdown background if saved in localStorage
+    if (isHighContrast) {
+      body.classList.add('high-contrast');
+      toggleButton.querySelector('span').textContent = 'Normal Mode';
+      updateDropdownBackground();
+    }
+
+    // Toggle contrast mode on click and reload page
+    toggleButton.addEventListener('click', () => {
+      body.classList.toggle('high-contrast');
+      const isHighContrast = body.classList.contains('high-contrast');
+      localStorage.setItem('highContrast', isHighContrast);
+      toggleButton.querySelector('span').textContent = isHighContrast ? 'Normal Mode' : 'Contrast Mode';
+      updateDropdownBackground();
+      window.location.reload(); // Reload page to apply all styles
+    });
+
+    // Ensure dropdown background updates on dropdown toggle
+    document.querySelectorAll('.dropdown-toggle').forEach(toggle => {
+      toggle.addEventListener('click', updateDropdownBackground);
+    });
+  });
+</script>
