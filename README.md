@@ -243,6 +243,7 @@ This project is not affiliated with NHS England's **GP Connect** service.
 
 ## Author
 
-**Quynh Trang Nguyen**  
-MSc Information Systems  
-University of Portsmouth
+**Quynh Trang Nguyen**
+
+[Portfolio](https://my-portfolio-ivory-ten-46.vercel.app/)
+[LinkedIn](https://www.linkedin.com/in/quynh-trang-nguyen-21a559334/)
