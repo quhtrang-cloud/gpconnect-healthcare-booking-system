@@ -1,13 +1,19 @@
 # Dependencies
 node_modules/
 
-# Environment variables / secrets
+# Environment variables and secrets
 .env
 .env.*
 !.env.example
+db-config.js
+LOGIN DETAILS.txt
 
 # Runtime data
 src/notifications.json
+
+# Testing recordings
+CSS-CHECK.mp4
+HTML-CHECK.mp4
 
 # Logs
 *.log
@@ -15,11 +21,11 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# OS files
+# Operating system files
 .DS_Store
 Thumbs.db
 
-# Editor files
+# Editor settings
 .vscode/
 .idea/
 

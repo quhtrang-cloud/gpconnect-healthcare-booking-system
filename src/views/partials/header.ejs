@@ -30,13 +30,11 @@
               </a>
             </li>
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <button type="button" class="nav-link dropdown-toggle d-flex align-items-center btn btn-link border-0" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="fas fa-user-circle me-2"></i>
                 <span>Account</span>
-              </a>
+              </button>
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                <li><a class="dropdown-item" href="/profile"><i class="fas fa-user me-2"></i>Profile</a></li>
-                <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="/api/users/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
               </ul>
             </li>
@@ -54,10 +52,10 @@
               </a>
             </li>
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <button type="button" class="nav-link dropdown-toggle d-flex align-items-center btn btn-link border-0" id="adminDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="fas fa-user-cog me-2"></i>
                 <span>Admin</span>
-              </a>
+              </button>
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminDropdown">
                 <li><a class="dropdown-item" href="/api/users/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
               </ul>
@@ -76,10 +74,10 @@
               </a>
             </li>
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="gpDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <button type="button" class="nav-link dropdown-toggle d-flex align-items-center btn btn-link border-0" id="gpDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="fas fa-stethoscope me-2"></i>
                 <span>GP Account</span>
-              </a>
+              </button>
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="gpDropdown">
                 <li><a class="dropdown-item" href="/api/users/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
               </ul>
@@ -101,7 +99,7 @@
         <% } %>
         <!-- Contrast Mode Toggle -->
         <li class="nav-item">
-          <button class="nav-link btn btn-link d-flex align-items-center" id="highContrastToggle" title="Toggle Contrast Mode">
+          <button type="button" class="nav-link btn btn-link d-flex align-items-center" id="highContrastToggle" aria-pressed="false" title="Toggle contrast mode">
             <i class="fas fa-eye me-2"></i>
             <span>Contrast Mode</span>
           </button>
@@ -110,44 +108,25 @@
     </div>
   </div>
 </nav>
-<!-- Bootstrap JS and Contrast Mode Script -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // Contrast Mode Toggle and Dropdown Background
   document.addEventListener('DOMContentLoaded', () => {
     const toggleButton = document.getElementById('highContrastToggle');
     const body = document.body;
-    const dropdownMenus = document.querySelectorAll('.dropdown-menu');
-    const isHighContrast = localStorage.getItem('highContrast') === 'true';
+    if (!toggleButton) return;
 
-    // Function to update dropdown menu background
-    function updateDropdownBackground() {
-      const isContrastMode = body.classList.contains('high-contrast');
-      dropdownMenus.forEach(menu => {
-        menu.style.backgroundColor = isContrastMode ? '#ffffff' : '';
-      });
-    }
+    const updateButton = () => {
+      const active = body.classList.contains('high-contrast');
+      toggleButton.setAttribute('aria-pressed', String(active));
+      toggleButton.querySelector('span').textContent = active ? 'Normal Mode' : 'Contrast Mode';
+    };
 
-    // Apply contrast mode and dropdown background if saved in localStorage
-    if (isHighContrast) {
-      body.classList.add('high-contrast');
-      toggleButton.querySelector('span').textContent = 'Normal Mode';
-      updateDropdownBackground();
-    }
+    body.classList.toggle('high-contrast', localStorage.getItem('highContrast') === 'true');
+    updateButton();
 
-    // Toggle contrast mode on click and reload page
     toggleButton.addEventListener('click', () => {
       body.classList.toggle('high-contrast');
-      const isHighContrast = body.classList.contains('high-contrast');
-      localStorage.setItem('highContrast', isHighContrast);
-      toggleButton.querySelector('span').textContent = isHighContrast ? 'Normal Mode' : 'Contrast Mode';
-      updateDropdownBackground();
-      window.location.reload(); // Reload page to apply all styles
-    });
-
-    // Ensure dropdown background updates on dropdown toggle
-    document.querySelectorAll('.dropdown-toggle').forEach(toggle => {
-      toggle.addEventListener('click', updateDropdownBackground);
+      localStorage.setItem('highContrast', String(body.classList.contains('high-contrast')));
+      updateButton();
     });
   });
 </script>

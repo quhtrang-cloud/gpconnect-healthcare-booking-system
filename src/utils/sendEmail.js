@@ -1,336 +1,84 @@
 const nodemailer = require('nodemailer')
 const pool = require('../config/db')
 
-// Configure Nodemailer with Brevo SMTP
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
+  secure: Number(process.env.SMTP_PORT) === 465,
+  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
 })
 
-// Function to send email
-async function sendEmail(userId, subject, action, details) {
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+}
+
+async function sendEmail(userId, subject, action, details = {}) {
   try {
-    // Fetch user email and notification preferences
-    const userResult = await pool.query(
-      `
-        SELECT email, notification_preferences
-        FROM users
-        WHERE id = $1
-      `,
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS || !process.env.EMAIL_FROM) {
+      console.warn('Email skipped because SMTP configuration is incomplete')
+      return false
+    }
+
+    const result = await pool.query(
+      'SELECT email, name, notification_preferences FROM users WHERE id = $1',
       [userId]
     )
+    const user = result.rows[0]
 
-    if (userResult.rows.length === 0) {
-      console.log(
-        `User not found for email notification: ${userId}`
-      )
-      return false
-    }
+    if (!user || user.notification_preferences?.email !== true) return false
 
-    const {
-      email,
-      notification_preferences: notificationPreferences,
-    } = userResult.rows[0]
+    const appUrl = process.env.APP_URL || 'http://localhost:3000'
+    const supportEmail = process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM
+    const rows = Object.entries(details).map(([key, value]) => `
+      <tr>
+        <th style="text-align:left;padding:8px;border-bottom:1px solid #e5e7eb;">${escapeHtml(key.replaceAll('_', ' ').replace(/\b\w/g, c => c.toUpperCase()))}</th>
+        <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${escapeHtml(value)}</td>
+      </tr>`).join('')
 
-    const emailEnabled =
-      notificationPreferences?.email === true
+    const html = `<!doctype html>
+      <html lang="en"><body style="margin:0;background:#f4f7fa;font-family:Arial,sans-serif;color:#222;">
+        <main style="max-width:640px;margin:24px auto;background:#fff;border-radius:12px;overflow:hidden;">
+          <header style="padding:28px;background:#1e3a8a;color:#fff;text-align:center;">
+            <h1 style="margin:0;font-size:26px;">${escapeHtml(subject)}</h1>
+          </header>
+          <section style="padding:28px;">
+            <p>Dear ${escapeHtml(user.name || 'User')},</p>
+            <p>Your ${escapeHtml(action)} has been processed. The details are shown below.</p>
+            <table style="width:100%;border-collapse:collapse;">${rows}</table>
+            <p style="margin-top:24px;"><a href="${escapeHtml(appUrl)}/appointments" style="display:inline-block;padding:12px 20px;background:#1e3a8a;color:#fff;text-decoration:none;border-radius:8px;">View appointments</a></p>
+            <p>Need help? Contact <a href="mailto:${escapeHtml(supportEmail)}">${escapeHtml(supportEmail)}</a>.</p>
+          </section>
+          <footer style="padding:18px;background:#f8fafc;text-align:center;color:#555;font-size:13px;">
+            <p>GP Appointment System © ${new Date().getFullYear()} | All Rights Reserved</p>
+            <p>
+              <a href="http://gpappointmentsystem.com">Visit our Website</a> |
+              <a href="mailto:support@gpappointmentsystem.com">support@gpappointmentsystem.com</a>
+            </p>
+            <p>
+              <a href="https://facebook.com/gpappointmentsystem">Facebook</a> |
+              <a href="https://instagram.com/gpappointmentsystem">Instagram</a> |
+              <a href="https://twitter.com/gpappointmentsystem">Twitter</a>
+            </p>
+          </footer>
+        </main>
+      </body></html>`
 
-    if (!emailEnabled) {
-      console.log(
-        `Email notifications disabled for user_id: ${userId}`
-      )
-      return false
-    }
-
-    const appUrl =
-      process.env.APP_URL || 'http://localhost:3000'
-
-    // Generate HTML email body
-    const htmlBody = `
-      <html>
-        <head>
-          <style>
-            body {
-              background: #f4f7fa;
-              margin: 0;
-              padding: 0;
-              font-family: 'Helvetica Neue', Arial, sans-serif;
-              color: #333;
-            }
-
-            .email-container {
-              max-width: 650px;
-              margin: 30px auto;
-              background: linear-gradient(
-                145deg,
-                #ffffff,
-                #f9fbfd
-              );
-              border-radius: 16px;
-              box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-              overflow: hidden;
-            }
-
-            .header {
-              background: linear-gradient(
-                90deg,
-                #1a73e8,
-                #34c0eb
-              );
-              color: white;
-              text-align: center;
-              padding: 40px 20px;
-              position: relative;
-            }
-
-            .header::before {
-              content: '';
-              position: absolute;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
-              background: url(
-                'https://www.transparenttextures.com/patterns/white-diamond.png'
-              );
-              opacity: 0.1;
-            }
-
-            .header h1 {
-              margin: 0;
-              font-size: 32px;
-              font-weight: 700;
-              letter-spacing: 1px;
-              position: relative;
-            }
-
-            .header p {
-              margin: 8px 0 0;
-              font-size: 16px;
-              opacity: 0.9;
-              position: relative;
-            }
-
-            .content {
-              padding: 40px 30px;
-              background: #ffffff;
-            }
-
-            .content p {
-              font-size: 16px;
-              line-height: 1.7;
-              margin: 0 0 20px;
-              color: #444;
-            }
-
-            .details {
-              background: #f8fafc;
-              border-radius: 12px;
-              padding: 20px;
-              margin: 25px 0;
-              border-left: 4px solid #1a73e8;
-            }
-
-            .details p {
-              margin: 10px 0;
-              font-size: 15px;
-              font-weight: 500;
-              color: #222;
-              display: flex;
-              justify-content: space-between;
-            }
-
-            .details p span:first-child {
-              font-weight: 600;
-            }
-
-            .cta-button {
-              display: inline-block;
-              padding: 14px 28px;
-              background: #1a73e8;
-              color: white;
-              text-decoration: none;
-              border-radius: 25px;
-              font-weight: 600;
-              font-size: 16px;
-              margin: 20px 0;
-            }
-
-            .footer {
-              text-align: center;
-              font-size: 13px;
-              color: #666;
-              padding: 25px;
-              background: #f8fafc;
-              border-top: 1px solid #e8ecef;
-            }
-
-            .footer a {
-              color: #1a73e8;
-              text-decoration: none;
-            }
-
-            .social-icons {
-              margin-top: 15px;
-            }
-
-            .social-icons img {
-              width: 24px;
-              margin: 0 8px;
-              opacity: 0.7;
-            }
-
-            @media only screen and (max-width: 600px) {
-              .email-container {
-                margin: 15px;
-                border-radius: 12px;
-              }
-
-              .header h1 {
-                font-size: 24px;
-              }
-
-              .content {
-                padding: 20px;
-              }
-
-              .details p {
-                flex-direction: column;
-                gap: 5px;
-              }
-            }
-          </style>
-        </head>
-
-        <body>
-          <div class="email-container">
-            <div class="header">
-              <h1>${subject}</h1>
-              <p>GP Appointment System</p>
-            </div>
-
-            <div class="content">
-              <p>Dear User,</p>
-
-              <p>
-                Your ${action} has been processed successfully.
-                Below are the details:
-              </p>
-
-              <div class="details">
-                ${Object.entries(details)
-                  .map(
-                    ([key, value]) => `
-                      <p>
-                        <strong>
-                          ${key
-                            .replace(/_/g, ' ')
-                            .replace(/\b\w/g, (c) => c.toUpperCase())}:
-                        </strong>
-                        &nbsp;${value}
-                      </p>
-                    `
-                  )
-                  .join('')}
-              </div>
-
-              <p>
-                If you have any questions, please contact us at
-                <a href="mailto:${process.env.SUPPORT_EMAIL}">
-                  support@gpappointmentsystem.com
-                </a>.
-              </p>
-
-              <a
-                href="${appUrl}/appointments"
-                rel="noreferrer"
-                class="cta-button"
-                style="color: white;"
-              >
-                View Appointments
-              </a>
-
-              <p>
-                Thank you for using the GP Appointment System!
-              </p>
-            </div>
-
-            <div class="footer">
-              <p>
-                GP Appointment System ©
-                ${new Date().getFullYear()}
-                | All Rights Reserved
-              </p>
-
-              <p>
-                <a href="http://gpappointmentsystem.com">
-                  Visit our Website
-                </a>
-                |
-                <a href="mailto:support@gpappointmentsystem.com">
-                  support@gpappointmentsystem.com
-                </a>
-              </p>
-
-              <div class="social-icons">
-                <a href="https://facebook.com/gpappointmentsystem">
-                  <img
-                    src="https://img.icons8.com/color/48/000000/facebook-new.png"
-                    alt="Facebook"
-                  >
-                </a>
-
-                <a href="https://instagram.com/gpappointmentsystem">
-                  <img
-                    src="https://img.icons8.com/color/48/000000/instagram-new.png"
-                    alt="Instagram"
-                  >
-                </a>
-
-                <a href="https://twitter.com/gpappointmentsystem">
-                  <img
-                    src="https://img.icons8.com/color/48/000000/twitter--v1.png"
-                    alt="Twitter"
-                  >
-                </a>
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>
-    `
-
-    const mailOptions = {
-      from: `${
-        process.env.EMAIL_FROM_NAME || 'GPConnect'
-      } <${process.env.EMAIL_FROM}>`,
-      to: email,
+    await transporter.sendMail({
+      from: `${process.env.EMAIL_FROM_NAME || 'GPConnect'} <${process.env.EMAIL_FROM}>`,
+      to: user.email,
       subject,
-      html: htmlBody,
-    }
-
-    await transporter.sendMail(mailOptions)
-
-    console.log(
-      `Email sent successfully for action: ${action}`
-    )
-
+      html,
+    })
     return true
   } catch (error) {
-    console.error(
-      `Error sending email for user_id ${userId}:`,
-      error.message
-    )
-
+    console.error(`Error sending email for user_id ${userId}:`, error.message)
     return false
   }
 }
 
-module.exports = {
-  sendEmail,
-}
+module.exports = { sendEmail }

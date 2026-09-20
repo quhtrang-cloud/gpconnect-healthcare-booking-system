@@ -149,6 +149,13 @@ router.post('/delete-gp', auth, async (req, res) => {
     return res.redirect('/api/admin/dashboard?error=Missing%20GP%20ID');
   }
   try {
+    const linkedAccounts = await pool.query(
+      'SELECT id FROM users WHERE gp_id = $1 LIMIT 1',
+      [gp_id]
+    );
+    if (linkedAccounts.rows.length > 0) {
+      return res.redirect('/api/admin/dashboard?error=Cannot%20delete%20GP%20while%20a%20user%20account%20is%20linked');
+    }
     const appointments = await pool.query('SELECT id FROM appointments WHERE gp_id = $1', [gp_id]);
     if (appointments.rows.length > 0) {
       return res.redirect('/api/admin/dashboard?error=Cannot%20delete%20GP%20with%20existing%20appointments');
@@ -285,8 +292,10 @@ router.post('/approve-swap', auth, async (req, res) => {
     return res.redirect('/login');
   }
   const { request_id } = req.body;
+  const client = await pool.connect();
   try {
-    const swap = await pool.query(
+    await client.query('BEGIN');
+    const swap = await client.query(
       'SELECT sr.user_id, sr.current_appointment_id, sr.target_appointment_id, a1.gp_id AS current_gp_id, a1.start_time AS current_start, a1.end_time AS current_end, p1.city AS current_city, g1.name AS current_gp_name, a2.gp_id AS target_gp_id, a2.start_time AS target_start, a2.end_time AS target_end, p2.city AS target_city, g2.name AS target_gp_name ' +
       'FROM swap_requests sr ' +
       'JOIN appointments a1 ON sr.current_appointment_id = a1.id ' +
@@ -295,20 +304,25 @@ router.post('/approve-swap', auth, async (req, res) => {
       'JOIN gps g2 ON a2.gp_id = g2.id ' +
       'JOIN practices p1 ON g1.practice_id = p1.id ' +
       'JOIN practices p2 ON g2.practice_id = p2.id ' +
-      'WHERE sr.id = $1 AND sr.status = $2',
+      'WHERE sr.id = $1 AND sr.status = $2 FOR UPDATE OF sr, a1, a2',
       [request_id, 'pending']
     );
     if (swap.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.redirect('/success?message=Invalid%20or%20already%20processed%20swap%20request');
     }
     const { user_id, current_appointment_id, target_appointment_id, current_gp_name, current_city, current_start, target_gp_name, target_city, target_start } = swap.rows[0];
-    const currentAppt = await pool.query('SELECT user_id FROM appointments WHERE id = $1', [current_appointment_id]);
-    const targetAppt = await pool.query('SELECT user_id FROM appointments WHERE id = $1', [target_appointment_id]);
-    await pool.query('BEGIN');
-    await pool.query('UPDATE appointments SET user_id = $1 WHERE id = $2', [targetAppt.rows[0].user_id, current_appointment_id]);
-    await pool.query('UPDATE appointments SET user_id = $1 WHERE id = $2', [currentAppt.rows[0].user_id, target_appointment_id]);
-    await pool.query('UPDATE swap_requests SET status = $1 WHERE id = $2', ['approved', request_id]);
-    await pool.query('COMMIT');
+    const currentAppt = await client.query('SELECT user_id FROM appointments WHERE id = $1 FOR UPDATE', [current_appointment_id]);
+    const targetAppt = await client.query('SELECT user_id FROM appointments WHERE id = $1 FOR UPDATE', [target_appointment_id]);
+
+    if (!currentAppt.rows[0] || !targetAppt.rows[0]) {
+      throw new Error('One or both appointments no longer exist');
+    }
+
+    await client.query('UPDATE appointments SET user_id = $1 WHERE id = $2', [targetAppt.rows[0].user_id, current_appointment_id]);
+    await client.query('UPDATE appointments SET user_id = $1 WHERE id = $2', [currentAppt.rows[0].user_id, target_appointment_id]);
+    await client.query('UPDATE swap_requests SET status = $1 WHERE id = $2', ['approved', request_id]);
+    await client.query('COMMIT');
 
     // Write notification to JSON file for both users
     await initializeNotificationsFile();
@@ -355,9 +369,11 @@ router.post('/approve-swap', auth, async (req, res) => {
     }
     res.redirect('/success?message=Swap%20request%20approved');
   } catch (error) {
-    await pool.query('ROLLBACK');
+    await client.query('ROLLBACK').catch(() => undefined);
     console.error('Error approving swap:', error);
     res.redirect('/success?message=Error%20approving%20swap');
+  } finally {
+    client.release();
   }
 });
 

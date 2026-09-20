@@ -29,7 +29,8 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.disable('x-powered-by');
+app.use(cors({ origin: process.env.APP_URL || 'http://localhost:3000', credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -43,28 +44,6 @@ app.use('/api/users', userRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/admin', adminRoutes);
-
-// Mark notification as read
-app.post('/api/appointments/mark-notification-read', async (req, res) => {
-  try {
-    const { notification_id } = req.body;
-    if (!notification_id) {
-      return res.status(400).json({ error: 'Notification ID is required' });
-    }
-    await initializeNotificationsFile();
-    const notifications = JSON.parse(await fs.readFile(NOTIFICATIONS_FILE));
-    const notification = notifications.find(n => n.id == notification_id);
-    if (!notification) {
-      return res.status(404).json({ error: 'Notification not found' });
-    }
-    notification.is_read = true;
-    await fs.writeFile(NOTIFICATIONS_FILE, JSON.stringify(notifications, null, 2));
-    res.status(200).json({ success: true });
-  } catch (error) {
-    console.error('Error marking notification as read:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
 
 // Page Routes
 app.get('/', (req, res) => res.render('index', { user: req.user }));
@@ -153,7 +132,7 @@ app.get('/feedback', async (req, res) => {
     const appointments = await pool.query(
       'SELECT a.id, a.gp_id, g.name AS gp_name, a.start_time, a.end_time, p.city, p.name AS practice_name, a.is_booked, a.user_id, g.specialization ' +
       'FROM appointments a JOIN gps g ON a.gp_id = g.id JOIN practices p ON g.practice_id = p.id ' +
-      'WHERE a.is_booked = true AND a.user_id = $1',
+      'WHERE a.is_booked = true AND a.user_id = $1 AND a.end_time < NOW()',
       [req.user.id]
     );
     let feedbackQuery;
@@ -197,13 +176,22 @@ app.get('/gp', async (req, res) => {
     return res.redirect('/login');
   }
   try {
-    const gp = await pool.query('SELECT id, specialization FROM gps WHERE name = $1', [req.user.name]);
+    const gp = await pool.query(
+      `
+        SELECT g.id, g.name, g.specialization
+        FROM users AS u
+        JOIN gps AS g ON g.id = u.gp_id
+        WHERE u.id = $1
+          AND u.role = 'gp'
+      `,
+      [req.user.id]
+    );
     if (gp.rows.length === 0) {
       return res.render('gp', {
         user: req.user,
         appointments: [],
         feedback: [],
-        error: 'GP profile not found'
+        error: 'No GP profile is linked to this account'
       });
     }
     const gpId = gp.rows[0].id;

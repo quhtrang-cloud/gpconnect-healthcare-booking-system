@@ -1,14 +1,22 @@
 {
-  "name": "appointment",
+  "name": "healthcare-appointment-booking-system",
   "version": "1.0.0",
-  "description": "",
+  "description": "Academic full-stack healthcare appointment booking prototype with flexible search, scheduling recommendations, appointment swapping and Google Calendar integration.",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "check": "node --check server.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "healthcare",
+    "appointment-booking",
+    "nodejs",
+    "express",
+    "postgresql",
+    "ejs"
+  ],
+  "author": "Quynh Trang Nguyen",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {

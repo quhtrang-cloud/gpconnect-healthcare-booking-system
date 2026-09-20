@@ -620,7 +620,15 @@ router.post('/check-conflicts', auth, async (req, res) => {
     return res.redirect('/login');
   }
   console.log('POST /check-conflicts - req.body:', req.body);
-  const { start_time, end_time } = req.body;
+  const {
+    start_time,
+    end_time,
+    city,
+    date,
+    gp_id,
+    practice_id,
+    symptom_category
+  } = req.body;
   try {
     const cities = await pool.query('SELECT DISTINCT city FROM practices');
     const gps = await pool.query('SELECT id, name, specialization FROM gps');
@@ -639,12 +647,53 @@ router.post('/check-conflicts', auth, async (req, res) => {
       conflicts = await checkGoogleConflicts(tokens, start_time, end_time);
     }
 
-    const appointments = await pool.query(
-      'SELECT a.id, a.gp_id, g.name AS gp_name, a.start_time, a.end_time, p.city, p.name AS practice_name, a.is_booked, a.user_id, g.specialization ' +
-      'FROM appointments a JOIN gps g ON a.gp_id = g.id JOIN practices p ON g.practice_id = p.id ' +
-      'WHERE a.is_booked = true AND a.user_id = $1',
-      [req.user.id]
-    );
+    let appointments;
+
+    // Keep the same available-appointment results on screen after the
+    // Google Calendar conflict check. Fall back to the user's booked
+    // appointments when the request did not come from a search result.
+    if (city && date) {
+      let appointmentQuery =
+        'SELECT a.id, a.gp_id, g.name AS gp_name, a.start_time, a.end_time, ' +
+        'p.city, p.name AS practice_name, a.is_booked, a.user_id, g.specialization ' +
+        'FROM appointments a ' +
+        'JOIN gps g ON a.gp_id = g.id ' +
+        'JOIN practices p ON g.practice_id = p.id ' +
+        'WHERE p.city = $1 AND a.start_time::date = $2 AND a.is_booked = false';
+      const appointmentParams = [city, date];
+
+      if (gp_id) {
+        appointmentQuery += ` AND g.id = $${appointmentParams.length + 1}`;
+        appointmentParams.push(gp_id);
+      } else if (
+        symptom_category &&
+        symptomToSpecialization[symptom_category]
+      ) {
+        appointmentQuery +=
+          ` AND g.specialization = $${appointmentParams.length + 1}`;
+        appointmentParams.push(
+          symptomToSpecialization[symptom_category]
+        );
+      }
+
+      if (practice_id) {
+        appointmentQuery += ` AND p.id = $${appointmentParams.length + 1}`;
+        appointmentParams.push(practice_id);
+      }
+
+      appointmentQuery += ' ORDER BY a.start_time ASC';
+      appointments = await pool.query(
+        appointmentQuery,
+        appointmentParams
+      );
+    } else {
+      appointments = await pool.query(
+        'SELECT a.id, a.gp_id, g.name AS gp_name, a.start_time, a.end_time, p.city, p.name AS practice_name, a.is_booked, a.user_id, g.specialization ' +
+        'FROM appointments a JOIN gps g ON a.gp_id = g.id JOIN practices p ON g.practice_id = p.id ' +
+        'WHERE a.is_booked = true AND a.user_id = $1',
+        [req.user.id]
+      );
+    }
 
     res.render('appointments', {
       user: req.user,
@@ -656,11 +705,11 @@ router.post('/check-conflicts', auth, async (req, res) => {
       error: errorMessage || (conflicts.length > 0 ? 'Conflicts found with your Google Calendar.' : 'No conflicts found.'),
       conflicts: conflicts.length > 0 ? conflicts : null,
       recommended: false,
-      selectedCity: userPrefs.rows[0]?.preferred_gp ? cities.rows.find(c => c.city === 'London')?.city || cities.rows[0]?.city || null : null,
-      selectedDate: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0],
-      selectedGp: userPrefs.rows[0]?.preferred_gp || null,
-      selectedPractice: null,
-      selectedSymptom: null
+      selectedCity: city || (userPrefs.rows[0]?.preferred_gp ? cities.rows.find(c => c.city === 'London')?.city || cities.rows[0]?.city || null : null),
+      selectedDate: date || new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0],
+      selectedGp: gp_id || userPrefs.rows[0]?.preferred_gp || null,
+      selectedPractice: practice_id || null,
+      selectedSymptom: symptom_category || null
     });
   } catch (error) {
     console.error('Error in /check-conflicts:', error);
@@ -686,11 +735,11 @@ router.post('/check-conflicts', auth, async (req, res) => {
       error: 'Error checking conflicts: ' + error.message,
       conflicts: null,
       recommended: false,
-      selectedCity: null,
-      selectedDate: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0],
-      selectedGp: null,
-      selectedPractice: null,
-      selectedSymptom: null
+      selectedCity: city || null,
+      selectedDate: date || new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0],
+      selectedGp: gp_id || null,
+      selectedPractice: practice_id || null,
+      selectedSymptom: symptom_category || null
     });
   }
 });
@@ -797,6 +846,7 @@ router.get('/swap-options', auth, async (req, res) => {
           a.is_booked,
           g.name AS gp_name,
           g.specialization,
+          p.id AS practice_id,
           p.name AS practice_name,
           p.city
         FROM appointments a
@@ -817,21 +867,47 @@ router.get('/swap-options', auth, async (req, res) => {
   }
 });
 
-// Get Other Users' Upcoming Booked Appointments in the Same City (FR6)
+// Get other users' upcoming booked appointments at the same practice (FR6)
 router.get('/swap-targets', auth, async (req, res) => {
   if (!req.user || !req.user.id) {
     return res.status(401).json({ error: 'Please log in' });
   }
 
-  const { city, exclude_id } = req.query;
+  const { exclude_id } = req.query;
 
-  if (!city) {
-    return res.status(400).json({ error: 'City is required' });
+  if (!exclude_id) {
+    return res.status(400).json({
+      error: 'Current appointment ID is required'
+    });
   }
 
   try {
-    const params = [req.user.id, city];
-    let query = `
+    // Resolve the practice from an appointment owned by the signed-in user.
+    // This prevents a client from supplying another practice manually.
+    const currentAppointment = await pool.query(
+      `
+        SELECT p.id AS practice_id
+        FROM appointments a
+        JOIN gps g ON a.gp_id = g.id
+        JOIN practices p ON g.practice_id = p.id
+        WHERE a.id = $1
+          AND a.user_id = $2
+          AND a.is_booked = true
+          AND a.start_time >= CURRENT_TIMESTAMP
+      `,
+      [exclude_id, req.user.id]
+    );
+
+    if (currentAppointment.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Current appointment is invalid or not yours'
+      });
+    }
+
+    const practiceId = currentAppointment.rows[0].practice_id;
+
+    const targets = await pool.query(
+      `
       SELECT
         a.id,
         a.gp_id,
@@ -841,6 +917,7 @@ router.get('/swap-targets', auth, async (req, res) => {
         a.is_booked,
         g.name AS gp_name,
         g.specialization,
+        p.id AS practice_id,
         p.name AS practice_name,
         p.city
       FROM appointments a
@@ -849,18 +926,14 @@ router.get('/swap-targets', auth, async (req, res) => {
       WHERE a.is_booked = true
         AND a.user_id IS NOT NULL
         AND a.user_id <> $1
-        AND p.city = $2
-        AND a.start_time >= CURRENT_DATE
-    `;
+        AND p.id = $2
+        AND a.id <> $3
+        AND a.start_time >= CURRENT_TIMESTAMP
+      ORDER BY a.start_time
+      `,
+      [req.user.id, practiceId, exclude_id]
+    );
 
-    if (exclude_id) {
-      params.push(exclude_id);
-      query += ` AND a.id <> $3`;
-    }
-
-    query += ' ORDER BY a.start_time';
-
-    const targets = await pool.query(query, params);
     res.json({ appointments: targets.rows });
   } catch (error) {
     console.error('Error loading swap targets:', error);
@@ -877,11 +950,11 @@ router.post('/swap', auth, async (req, res) => {
   const { my_appointment_id, target_appointment_id } = req.body;
   try {
     const myAppt = await pool.query(
-      'SELECT a.*, g.name AS gp_name, p.city, p.name AS practice_name, g.specialization FROM appointments a JOIN gps g ON a.gp_id = g.id JOIN practices p ON g.practice_id = p.id WHERE a.id = $1 AND a.user_id = $2',
+      'SELECT a.*, g.name AS gp_name, p.id AS practice_id, p.city, p.name AS practice_name, g.specialization FROM appointments a JOIN gps g ON a.gp_id = g.id JOIN practices p ON g.practice_id = p.id WHERE a.id = $1 AND a.user_id = $2 AND a.is_booked = true AND a.start_time >= CURRENT_TIMESTAMP',
       [my_appointment_id, req.user.id]
     );
     const targetAppt = await pool.query(
-      'SELECT a.*, g.name AS gp_name, p.city, p.name AS practice_name, g.specialization FROM appointments a JOIN gps g ON a.gp_id = g.id JOIN practices p ON g.practice_id = p.id WHERE a.id = $1 AND a.is_booked = true AND a.user_id IS NOT NULL AND a.user_id <> $2',
+      'SELECT a.*, g.name AS gp_name, p.id AS practice_id, p.city, p.name AS practice_name, g.specialization FROM appointments a JOIN gps g ON a.gp_id = g.id JOIN practices p ON g.practice_id = p.id WHERE a.id = $1 AND a.is_booked = true AND a.user_id IS NOT NULL AND a.user_id <> $2 AND a.start_time >= CURRENT_TIMESTAMP',
       [target_appointment_id, req.user.id]
     );
     if (myAppt.rows.length === 0 || targetAppt.rows.length === 0) {
@@ -890,11 +963,26 @@ router.post('/swap', auth, async (req, res) => {
     if (String(my_appointment_id) === String(target_appointment_id)) {
       return res.redirect('/success?message=Cannot swap with the same appointment');
     }
-    const { gp_name: my_gp_name, city: my_city, practice_name: my_practice_name, start_time: my_start_time } = myAppt.rows[0];
-    const { gp_name: target_gp_name, city: target_city, practice_name: target_practice_name, start_time: target_start_time } = targetAppt.rows[0];
+    const { practice_id: my_practice_id, gp_name: my_gp_name, city: my_city, practice_name: my_practice_name, start_time: my_start_time } = myAppt.rows[0];
+    const { practice_id: target_practice_id, gp_name: target_gp_name, city: target_city, practice_name: target_practice_name, start_time: target_start_time } = targetAppt.rows[0];
 
-    if (my_city !== target_city) {
-      return res.redirect('/success?message=Swap appointments must be in the same city');
+    if (Number(my_practice_id) !== Number(target_practice_id)) {
+      return res.redirect('/success?message=Swap appointments must be at the same practice');
+    }
+
+    const existingRequest = await pool.query(
+      `
+        SELECT id
+        FROM swap_requests
+        WHERE status = 'pending'
+          AND current_appointment_id = $1
+          AND target_appointment_id = $2
+      `,
+      [my_appointment_id, target_appointment_id]
+    );
+
+    if (existingRequest.rows.length > 0) {
+      return res.redirect('/success?message=A pending swap request already exists for these appointments');
     }
     await pool.query('INSERT INTO swap_requests (user_id, current_appointment_id, target_appointment_id, status) VALUES ($1, $2, $3, $4)', [
       req.user.id,
@@ -923,7 +1011,7 @@ router.get('/feedback', auth, async (req, res) => {
     const appointments = await pool.query(
       'SELECT a.id, a.gp_id, g.name AS gp_name, a.start_time, a.end_time, p.city, p.name AS practice_name, a.is_booked, a.user_id, g.specialization ' +
       'FROM appointments a JOIN gps g ON a.gp_id = g.id JOIN practices p ON g.practice_id = p.id ' +
-      'WHERE a.is_booked = true AND a.user_id = $1',
+      'WHERE a.is_booked = true AND a.user_id = $1 AND a.end_time < NOW()',
       [req.user.id]
     );
     let feedbackQuery;
@@ -985,11 +1073,11 @@ router.post('/feedback', auth, async (req, res) => {
   }
   try {
     const appt = await pool.query(
-      'SELECT a.*, g.name AS gp_name, p.city, p.name AS practice_name, g.specialization FROM appointments a JOIN gps g ON a.gp_id = g.id JOIN practices p ON g.practice_id = p.id WHERE a.id = $1 AND a.user_id = $2 AND a.is_booked = true',
+      'SELECT a.*, g.name AS gp_name, p.city, p.name AS practice_name, g.specialization FROM appointments a JOIN gps g ON a.gp_id = g.id JOIN practices p ON g.practice_id = p.id WHERE a.id = $1 AND a.user_id = $2 AND a.is_booked = true AND a.end_time < NOW()',
       [appointment_id, req.user.id]
     );
     if (appt.rows.length === 0) {
-      return res.redirect('/success?message=Invalid appointment or not yours');
+      return res.redirect('/success?message=Feedback can only be submitted after your appointment has ended');
     }
     const existingFeedback = await pool.query('SELECT * FROM feedback WHERE appointment_id = $1 AND user_id = $2', [appointment_id, req.user.id]);
     if (existingFeedback.rows.length > 0) {

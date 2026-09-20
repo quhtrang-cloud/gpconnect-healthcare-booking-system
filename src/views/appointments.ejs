@@ -623,16 +623,14 @@
                                         <form method="POST" action="/api/appointments/check-conflicts" class="d-inline">
                                           <input type="hidden" name="start_time" value="<%= appt.start_time %>">
                                           <input type="hidden" name="end_time" value="<%= appt.end_time %>">
+                                          <input type="hidden" name="city" value="<%= selectedCity || '' %>">
+                                          <input type="hidden" name="date" value="<%= selectedDate || '' %>">
+                                          <input type="hidden" name="practice_id" value="<%= selectedPractice || '' %>">
+                                          <input type="hidden" name="gp_id" value="<%= selectedGp || '' %>">
+                                          <input type="hidden" name="symptom_category" value="<%= selectedSymptom || '' %>">
                                           <button type="submit" class="btn btn-sm btn-outline-primary"
                                             data-bs-toggle="tooltip" title="Check for scheduling conflicts">
                                             <i class="fas fa-calendar-times me-1"></i>Check Conflict
-                                          </button>
-                                        </form>
-                                        <form method="POST" action="/api/calendar/sync" class="d-inline">
-                                          <input type="hidden" name="appointment_id" value="<%= appt.id %>">
-                                          <button type="submit" class="btn btn-sm btn-outline-primary"
-                                            data-bs-toggle="tooltip" title="Sync with Google Calendar">
-                                            <i class="fas fa-sync me-1"></i>Sync
                                           </button>
                                         </form>
                                       </td>
@@ -652,7 +650,7 @@
                       <% } %>
 
                         <!-- My Booked Appointments Section -->
-                        <% if ((appointments || []).filter(appt=> appt.is_booked && appt.user_id === user.id && new
+                        <% if ((appointments || []).filter(appt=> appt.is_booked && Number(appt.user_id) === Number(user.id) && new
                           Date(appt.start_time) >= new Date().setHours(0, 0, 0, 0)).length > 0) { %>
                           <div class="card shadow-sm mb-4">
                             <div class="card-header bg-primary bg-opacity-10">
@@ -675,7 +673,7 @@
                                     </tr>
                                   </thead>
                                   <tbody>
-                                    <% (appointments || []).filter(appt=> appt.is_booked && appt.user_id === user.id &&
+                                    <% (appointments || []).filter(appt=> appt.is_booked && Number(appt.user_id) === Number(user.id) &&
                                       new Date(appt.start_time) >= new Date().setHours(0, 0, 0, 0)).forEach(appt => { %>
                                       <tr>
                                         <td>
@@ -720,18 +718,25 @@
                                             class="d-inline">
                                             <input type="hidden" name="start_time" value="<%= appt.start_time %>">
                                             <input type="hidden" name="end_time" value="<%= appt.end_time %>">
+                                            <input type="hidden" name="city" value="<%= selectedCity || '' %>">
+                                            <input type="hidden" name="date" value="<%= selectedDate || '' %>">
+                                            <input type="hidden" name="practice_id" value="<%= selectedPractice || '' %>">
+                                            <input type="hidden" name="gp_id" value="<%= selectedGp || '' %>">
+                                            <input type="hidden" name="symptom_category" value="<%= selectedSymptom || '' %>">
                                             <button type="submit" class="btn btn-sm btn-outline-primary"
                                               data-bs-toggle="tooltip" title="Check for scheduling conflicts">
                                               <i class="fas fa-calendar-times me-1"></i>Check Conflict
                                             </button>
                                           </form>
-                                          <form method="POST" action="/api/calendar/sync" class="d-inline">
-                                            <input type="hidden" name="appointment_id" value="<%= appt.id %>">
-                                            <button type="submit" class="btn btn-sm btn-outline-primary"
-                                              data-bs-toggle="tooltip" title="Sync with Google Calendar">
-                                              <i class="fas fa-sync me-1"></i>Sync
-                                            </button>
-                                          </form>
+                                          <% if (appt.is_booked && Number(appt.user_id) === Number(user.id)) { %>
+                                            <form method="POST" action="/api/calendar/sync" class="d-inline">
+                                              <input type="hidden" name="appointment_id" value="<%= appt.id %>">
+                                              <button type="submit" class="btn btn-sm btn-outline-primary"
+                                                data-bs-toggle="tooltip" title="Sync with Google Calendar">
+                                                <i class="fas fa-sync me-1"></i>Sync
+                                              </button>
+                                            </form>
+                                          <% } %>
                                         </td>
                                       </tr>
                                       <% }) %>
@@ -827,7 +832,6 @@
                             <% } %>
     </main>
     <%- include('partials/footer') %>
-      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
       <script>
         // Apply high contrast mode from localStorage
         document.addEventListener('DOMContentLoaded', () => {
@@ -912,6 +916,65 @@
             }
             practiceSelect.appendChild(option);
           });
+        }
+
+        // Keep the user's search choices while navigating to conflict/sync pages.
+        const appointmentSearchStorageKey = 'gpconnectAppointmentSearch';
+
+        function getAppointmentSearchState() {
+          return {
+            city: citySelect.value,
+            practiceId: practiceSelect.value,
+            gpId: document.getElementById('gp_id').value,
+            date: document.getElementById('date').value,
+            preferredTime: document.getElementById('preferredTime').value,
+            symptomCategory: document.getElementById('symptomCategory').value,
+            symptomDuration: document.getElementById('symptomDuration').value,
+            severePain: document.getElementById('redFlagSeverePain').checked,
+            breathing: document.getElementById('redFlagBreathing').checked,
+            highFever: document.getElementById('redFlagFever').checked,
+            otherRedFlag: document.getElementById('redFlagOther').checked,
+            recommended: recommendToggle.checked
+          };
+        }
+
+        function saveAppointmentSearchState() {
+          try {
+            sessionStorage.setItem(
+              appointmentSearchStorageKey,
+              JSON.stringify(getAppointmentSearchState())
+            );
+          } catch (error) {
+            console.warn('Unable to save appointment search state:', error);
+          }
+        }
+
+        function restoreAppointmentSearchState() {
+          try {
+            const savedValue = sessionStorage.getItem(appointmentSearchStorageKey);
+            if (!savedValue) return false;
+
+            const state = JSON.parse(savedValue);
+            citySelect.value = state.city || '';
+            updatePracticeOptions();
+            practiceSelect.value = state.practiceId || '';
+            document.getElementById('gp_id').value = state.gpId || '';
+            document.getElementById('date').value = state.date || '';
+            document.getElementById('preferredTime').value = state.preferredTime || '';
+            document.getElementById('symptomCategory').value = state.symptomCategory || '';
+            document.getElementById('symptomDuration').value = state.symptomDuration || '';
+            document.getElementById('redFlagSeverePain').checked = Boolean(state.severePain);
+            document.getElementById('redFlagBreathing').checked = Boolean(state.breathing);
+            document.getElementById('redFlagFever').checked = Boolean(state.highFever);
+            document.getElementById('redFlagOther').checked = Boolean(state.otherRedFlag);
+            recommendToggle.checked = Boolean(state.recommended);
+            updateFormAction();
+            return true;
+          } catch (error) {
+            console.warn('Unable to restore appointment search state:', error);
+            sessionStorage.removeItem(appointmentSearchStorageKey);
+            return false;
+          }
         }
 
         // Load swap appointments independently from the search results
@@ -1151,6 +1214,7 @@ citySelect.addEventListener('change', updatePracticeOptions);
         // Set initial form action and practice options on page load
         updateFormAction();
         updatePracticeOptions();
+        const appointmentSearchWasRestored = restoreAppointmentSearchState();
         loadMySwapAppointments();
 
         // Prevent default form submission and handle manually
@@ -1162,6 +1226,7 @@ citySelect.addEventListener('change', updatePracticeOptions);
             alert('Please select a city and date.');
             return;
           }
+          saveAppointmentSearchState();
           const formData = new URLSearchParams();
           formData.append('city', city);
           formData.append('practice_id', document.getElementById('practice_id').value);
@@ -1197,6 +1262,31 @@ citySelect.addEventListener('change', updatePracticeOptions);
             alert('Error processing request: ' + error.message);
           });
         });
+
+        // Save the current search before actions that navigate away from this page.
+        document.addEventListener('submit', event => {
+          const action = event.target?.getAttribute?.('action');
+          if (
+            action === '/api/appointments/check-conflicts' ||
+            action === '/api/calendar/sync' ||
+            action === '/api/appointments/book'
+          ) {
+            saveAppointmentSearchState();
+          }
+        }, true);
+
+        // The status page adds restoreSearch=true to its Back button.
+        const currentUrl = new URL(window.location.href);
+        if (
+          currentUrl.searchParams.get('restoreSearch') === 'true' &&
+          appointmentSearchWasRestored &&
+          citySelect.value &&
+          document.getElementById('date').value
+        ) {
+          currentUrl.searchParams.delete('restoreSearch');
+          window.history.replaceState({}, '', currentUrl.pathname + currentUrl.search);
+          window.setTimeout(() => form.requestSubmit(), 0);
+        }
 
         // Client-side validation for swap form
         document.getElementById('swapForm')?.addEventListener('submit', function (e) {

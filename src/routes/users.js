@@ -31,13 +31,31 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
-    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const result = await pool.query(
+      'SELECT id, email, password, name, role, gp_id FROM users WHERE email = $1',
+      [email]
+    );
     const user = result.rows[0];
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.render('login', { user: null, error: 'Invalid credentials' });
     }
-    const token = jwt.sign({ id: user.id, role: user.role, name: user.name }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.cookie('token', token, { httpOnly: true });
+    const token = jwt.sign(
+      {
+        id: user.id,
+        role: user.role,
+        name: user.name,
+        gpId: user.gp_id || null
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 1000
+    });
     if (user.role === 'admin') {
       return res.redirect('/api/admin/dashboard');
     } else if (user.role === 'gp') {
@@ -52,8 +70,13 @@ router.post('/login', async (req, res) => {
 
 // Logout User
 router.get('/logout', (req, res) => {
-  res.clearCookie('token');
-  res.redirect('/login');
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/'
+  });
+  return res.redirect('/login');
 });
 
 // Update Preferences
