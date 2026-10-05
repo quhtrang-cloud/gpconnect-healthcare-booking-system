@@ -5,6 +5,7 @@ const { checkGoogleConflicts } = require('../utils/googleCalendar');
 const { sendEmail } = require('../utils/sendEmail');
 const fs = require('fs').promises;
 const path = require('path');
+const triageUrgency = require('../utils/triageUrgency');
 
 const router = express.Router();
 
@@ -18,21 +19,6 @@ async function initializeNotificationsFile() {
   } catch {
     await fs.writeFile(NOTIFICATIONS_FILE, JSON.stringify([]));
   }
-}
-
-// Triage function to categorize urgency
-function triageUrgency({ symptom_category, symptom_duration, red_flags }) {
-  const hasRedFlags = red_flags && (red_flags.severe_pain || red_flags.breathing || red_flags.high_fever || red_flags.other);
-  if (hasRedFlags) {
-    return 'Urgent';
-  }
-  if (symptom_category === 'Fever' && symptom_duration === '<1 day') {
-    return 'Urgent';
-  }
-  if (['Pain', 'Fever', 'Respiratory', 'Digestive'].includes(symptom_category) && ['<1 day', '1-3 days'].includes(symptom_duration)) {
-    return 'Soon';
-  }
-  return 'Routine';
 }
 
 // Map symptom categories to GP specializations

@@ -1,21 +1,27 @@
 # Healthcare Appointment Booking System
 
-The Healthcare Appointment Booking System is a full-stack platform designed to improve the flexibility and usability of GP appointment booking.
+An individual full-stack prototype exploring more flexible and usable GP appointment booking, built with Node.js, Express, PostgreSQL and EJS.
 
 The application combines city-wide appointment discovery, rule-based scheduling recommendations, controlled appointment swaps, Google Calendar integration, automated email notifications, and role-specific workflows in a single responsive interface.
 
-> **Prototype status:** This application uses simulated data and is intended for research and demonstration purposes. It is not a clinical system and must not be used with real patient data or for medical diagnosis.
+> **Prototype status:** This application uses simulated data for research and demonstration. It is not a clinical system and must not be used with real patient data, for medical diagnosis or for emergency support. It is not affiliated with or endorsed by the NHS.
 
 ![Healthcare appointment booking system responsive interface](docs/images/healthcare-responsive.png)
 
-## Product Capabilities
+## Project Context and Contribution
+
+This project was developed independently for my MSc Information Systems dissertation at the University of Portsmouth. It uses simulated data and was evaluated locally without research participants.
+
+I was responsible for requirements analysis, interface design, database design, frontend and backend implementation, integration work, and prototype evaluation. Following the dissertation, I continued improving the codebase and added Jest unit tests, including a regression test that reproduced and helped resolve a red-flag parsing bug.
+
+## Key Features
 
 - **City-wide appointment discovery** - Search available appointments across practices within a selected city, with filters for practice, GP, date, and symptom category.
-- **Rule-based scheduling recommendations** - Prioritise suitable appointment options using symptom information, urgency indicators, preferred time, preferred GP, previous booking history, and availability.
+- **Rule-based scheduling recommendations** - Filter and rank appointment options using symptom information, urgency indicators, user preferences and previous booking history.
 - **Appointment management** - Book, review, and cancel appointments through a user-focused workflow.
 - **Controlled appointment swapping** - Request a swap with another user's eligible booked appointment at the same practice, subject to administrator approval.
 - **Google Calendar integration** - Authorise access through OAuth 2.0, check for scheduling conflicts, and add confirmed appointments to the user's calendar.
-- **Automated email notifications** - Deliver booking, cancellation, and swap-related updates through Nodemailer and Brevo SMTP when email notifications are enabled.
+- **Automated email notifications** - Send booking, cancellation and swap-related updates through Nodemailer and Brevo SMTP when configured and enabled.
 - **User preferences** - Store preferred GP and notification selections to support a more personalised experience.
 - **Post-appointment feedback** - Collect ratings and comments after an appointment has ended.
 - **Role-based workflows** - Provide tailored interfaces for users, administrators, and GPs.
@@ -34,7 +40,7 @@ When Intelligent Scheduling is enabled, the application applies rule-based urgen
 - **Soon**
 - **Routine**
 
-Available appointments are then ranked using scheduling criteria such as urgency, preferred time, preferred GP, previous GP booking history, and availability. The feature supports appointment selection only; it does not diagnose conditions or replace professional clinical assessment.
+Available appointments are filtered by city, date and optional criteria such as practice, GP, symptom category and preferred time. The preferred GP is also used as a filter when no GP is explicitly selected. Matching appointments are ranked using urgency rules, preferred GP and previous booking history. The feature supports appointment selection only; it does not diagnose conditions or replace professional clinical assessment.
 
 ![Appointment search and intelligent scheduling](docs/images/healthcare-discovery.png)
 
@@ -44,7 +50,7 @@ The swap workflow provides additional flexibility while retaining administrative
 
 1. A user selects one of their upcoming booked appointments.
 2. The system displays eligible appointments belonging to other users at the same practice.
-3. Each option clearly identifies the GP and specialization so the user can make an informed selection.
+3. Each option identifies the GP and specialisation for user selection and administrator review.
 4. The user submits a swap request.
 5. An administrator reviews and approves or rejects the request.
 6. When approved, appointment ownership is exchanged within a database transaction and in-app notifications are created for both affected users. Email delivery is attempted when enabled and configured.
@@ -63,7 +69,7 @@ Users can connect their Google account through OAuth 2.0. Once authorised, the a
 
 ### Notifications
 
-Email delivery is handled through Nodemailer and Brevo SMTP. Messages are sent only when valid SMTP configuration is available and the receiving user has enabled email notifications.
+Email notifications are sent through Nodemailer and Brevo SMTP when configured and enabled by the user.
 
 In-app swap notifications are stored in `src/notifications.json`. This is appropriate for a local prototype; a production implementation should move notification records and delivery state into PostgreSQL.
 
@@ -99,7 +105,8 @@ GP login accounts are linked to GP profiles through `users.gp_id`, which referen
 ├── server.js
 ├── package.json
 ├── tests
-│   └── auth.test.js
+│   ├── auth.test.js
+│   └── triageUrgency.test.js
 ├── .env.example
 └── src
     ├── config
@@ -118,7 +125,8 @@ GP login accounts are linked to GP profiles through `users.gp_id`, which referen
     │   └── users.js
     ├── utils
     │   ├── googleCalendar.js
-    │   └── sendEmail.js
+    │   ├── sendEmail.js
+    │   └── triageUrgency.js
     ├── views
     │   ├── partials
     │   └── *.ejs
@@ -316,7 +324,7 @@ Before production use, the platform would require additional controls including 
 
 ## Automated Testing
 
-The project includes five unit tests for the authentication middleware, written with Jest.
+The project includes eight unit test cases written with Jest: five for authentication middleware and three for red-flag parsing in the scheduling urgency helper.
 
 After installing dependencies, run:
 
@@ -324,7 +332,9 @@ After installing dependencies, run:
 npm test
 ```
 
-The tests cover:
+### Authentication Middleware
+
+Five test cases cover:
 
 - Requests without a token
 - Valid JWTs supplied through cookies
@@ -332,13 +342,27 @@ The tests cover:
 - Expired tokens
 - Valid JWTs supplied through the Authorization Bearer header
 
-The tests use a temporary test-only JWT secret and do not require PostgreSQL, Google Calendar credentials or SMTP configuration.
+The authentication tests use a temporary test-only JWT secret.
 
-These tests verify token authentication only. They do not yet cover registration, login/logout routes, database integration, appointment workflows or browser interactions. Passing these tests does not establish complete test coverage or production readiness.
+### Red-Flag Parsing
+
+Three test cases cover:
+
+- All red flags supplied as the string `'false'` do not trigger the red-flag urgency rule
+- A `severe_pain` flag supplied as boolean `true` returns `Urgent`
+- A `severe_pain` flag supplied as the string `'true'` returns `Urgent`
+
+A regression test reproduced a bug where non-empty `'false'` strings were treated as active red flags. The helper now recognises only boolean `true` or the string `'true'` as selected flags. The application route and tests import the same helper from `src/utils/triageUrgency.js`.
+
+These tests check the prototype's software rules, not the clinical validity of its scheduling categories.
+
+### Scope and Limitations
+
+The unit tests do not require PostgreSQL, Google Calendar credentials or SMTP configuration. They do not yet cover registration, login/logout routes, database integration, appointment workflows, browser interactions or all scheduling rules. Passing these tests does not establish complete test coverage or production readiness.
 
 ## Verification Checklist
 
-Automated tests currently cover the authentication middleware. The following workflows still require manual verification:
+Automated tests currently cover the authentication middleware and selected red-flag parsing cases. The following workflows still require manual verification:
 
 - Registration, login, logout, and role-based redirects
 - Standard appointment search and rule-based recommendations
@@ -351,23 +375,14 @@ Automated tests currently cover the authentication middleware. The following wor
 - Feedback availability only after an appointment has ended
 - Keyboard navigation, responsive layouts, and high-contrast mode
 
-## Current Scope and Future Improvements
+## Limitations and Next Steps
 
-This project is a functional prototype built with simulated healthcare data. Its current scope includes the following considerations:
-
-- Scheduling recommendations use transparent rule-based logic to support appointment selection and do not provide medical diagnosis.
 - Swap eligibility is restricted to appointments at the same practice. GP specialisation is displayed for informed selection and administrator review rather than enforced automatically.
 - The swap workflow uses administrator approval; a future version could add direct confirmation from the owner of the target appointment.
 - In-app notifications are stored locally in JSON. A production implementation would use persistent database-backed notification and delivery records.
 - Google Calendar events can be created, but their event IDs are not retained for subsequent update or deletion.
 - SMS preferences are recorded, but SMS delivery is not currently implemented.
 - Further development would include expanding automated test coverage to application routes and appointment workflows, formal accessibility evaluation, encrypted OAuth-token storage, CSRF protection, rate limiting, audit logging, monitoring, and production deployment controls.
-
-## Disclaimer
-
-This application is an independent software prototype that uses simulated data. It is not intended for clinical use, medical diagnosis, emergency support, or the processing of real patient information.
-
-This project is not affiliated with or endorsed by the NHS.
 
 ## Author
 
