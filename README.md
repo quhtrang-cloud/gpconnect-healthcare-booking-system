@@ -47,7 +47,7 @@ The swap workflow provides additional flexibility while retaining administrative
 3. Each option clearly identifies the GP and specialization so the user can make an informed selection.
 4. The user submits a swap request.
 5. An administrator reviews and approves or rejects the request.
-6. When approved, appointment ownership is exchanged within a database transaction and both affected users receive notifications.
+6. When approved, appointment ownership is exchanged within a database transaction and in-app notifications are created for both affected users. Email delivery is attempted when enabled and configured.
 
 ![Appointment swap workflow](docs/images/healthcare-swap.png)
 
@@ -89,6 +89,7 @@ GP login accounts are linked to GP profiles through `users.gp_id`, which referen
 | Authentication | JWT, HTTP-only cookies, bcrypt password hashing |
 | Calendar | Google Calendar API, OAuth 2.0 |
 | Email | Nodemailer, Brevo SMTP |
+| Testing | Jest |
 | Development | npm, Git, GitHub |
 
 ## Project Structure
@@ -97,6 +98,8 @@ GP login accounts are linked to GP profiles through `users.gp_id`, which referen
 .
 ├── server.js
 ├── package.json
+├── tests
+│   └── auth.test.js
 ├── .env.example
 └── src
     ├── config
@@ -180,14 +183,11 @@ DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/appointment_syst
 JWT_SECRET=REPLACE_WITH_A_LONG_RANDOM_SECRET
 PORT=3000
 NODE_ENV=development
-
 APP_URL=http://localhost:3000
 APP_TIMEZONE=Europe/London
-
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 GOOGLE_REDIRECT_URI=http://localhost:3000/api/calendar/callback
-
 SMTP_HOST=smtp-relay.brevo.com
 SMTP_PORT=587
 SMTP_USER=
@@ -314,9 +314,31 @@ Google access and refresh tokens may be revoked or expire. Reconnect the calenda
 
 Before production use, the platform would require additional controls including CSRF protection, rate limiting, security headers, comprehensive input validation, encrypted OAuth-token storage, audit logging, monitoring, and formal security testing.
 
+## Automated Testing
+
+The project includes five unit tests for the authentication middleware, written with Jest.
+
+After installing dependencies, run:
+
+```bash
+npm test
+```
+
+The tests cover:
+
+- Requests without a token
+- Valid JWTs supplied through cookies
+- Invalid tokens
+- Expired tokens
+- Valid JWTs supplied through the Authorization Bearer header
+
+The tests use a temporary test-only JWT secret and do not require PostgreSQL, Google Calendar credentials or SMTP configuration.
+
+These tests verify token authentication only. They do not yet cover registration, login/logout routes, database integration, appointment workflows or browser interactions. Passing these tests does not establish complete test coverage or production readiness.
+
 ## Verification Checklist
 
-The repository does not currently include a comprehensive automated test suite. The main workflows should be verified manually:
+Automated tests currently cover the authentication middleware. The following workflows still require manual verification:
 
 - Registration, login, logout, and role-based redirects
 - Standard appointment search and rule-based recommendations
@@ -339,7 +361,7 @@ This project is a functional prototype built with simulated healthcare data. Its
 - In-app notifications are stored locally in JSON. A production implementation would use persistent database-backed notification and delivery records.
 - Google Calendar events can be created, but their event IDs are not retained for subsequent update or deletion.
 - SMS preferences are recorded, but SMS delivery is not currently implemented.
-- Further development would include automated testing, formal accessibility evaluation, encrypted OAuth-token storage, CSRF protection, rate limiting, audit logging, monitoring, and production deployment controls.
+- Further development would include expanding automated test coverage to application routes and appointment workflows, formal accessibility evaluation, encrypted OAuth-token storage, CSRF protection, rate limiting, audit logging, monitoring, and production deployment controls.
 
 ## Disclaimer
 
