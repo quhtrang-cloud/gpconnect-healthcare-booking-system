@@ -99,3 +99,15 @@ test.each([
 
   expect(result).toBe('Urgent');
 });
+
+test('prioritises a red flag over the Soon symptom rule', () => {
+  const result = triageUrgency({
+    symptom_category: 'Pain',
+    symptom_duration: '1-3 days',
+    red_flags: {
+      breathing: true,
+    },
+  });
+
+  expect(result).toBe('Urgent');
+});

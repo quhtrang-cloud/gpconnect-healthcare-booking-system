@@ -381,7 +381,7 @@ Before production use, the platform would require additional controls including 
 
 ## Automated Testing
 
-The project includes 22 automated test cases using Jest and Supertest: five authentication middleware tests, thirteen scheduling urgency tests, and four appointment booking route tests.
+The project includes 23 automated test cases using Jest and Supertest: five authentication middleware tests, fourteen scheduling urgency tests, and four appointment booking route tests.
 
 Run all tests:
 
@@ -394,21 +394,32 @@ npm test
 Five unit tests cover:
 
 - Requests without a token
+
 - Valid JWTs supplied through cookies
+
 - Invalid tokens
+
 - Expired tokens
+
 - Valid JWTs supplied through the Authorization Bearer header
 
 ### Scheduling Urgency
 
-Thirteen unit test cases cover:
+Fourteen unit test cases cover:
 
 - String `'false'` flags do not trigger the red-flag urgency rule
+
 - Boolean `false` flags do not trigger the red-flag urgency rule
+
 - Omitted red flags are handled without an error
+
 - Each of the four red flags triggers `Urgent` when supplied as boolean `true` or string `'true'`
+
 - Fever lasting less than one day returns `Urgent`
+
 - Pain lasting one to three days returns `Soon`
+
+- Red flags take priority over symptom rules that would otherwise return `Soon`
 
 A regression test reproduced a bug where non-empty `'false'` strings were treated as active red flags. The helper now recognises only boolean `true` or string `'true'` as selected flags. Both the application route and tests import the helper from `src/utils/triageUrgency.js`.
 
@@ -421,8 +432,11 @@ Four tests use Supertest to send HTTP requests to the Express booking route with
 The tests cover:
 
 - Guests are redirected to login without accessing the database or calling external services
+
 - Requests with invalid tokens are redirected to login without accessing the database or calling external services
+
 - Unavailable appointments are rejected without a database update or email call
+
 - Successful booking uses the authenticated user's ID, calls the database update and email functions, and redirects to the success message
 
 ### Test Isolation and Scope
