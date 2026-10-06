@@ -1,0 +1,180 @@
+jest.mock('../src/config/db', () => ({
+  query: jest.fn(),
+}));
+
+jest.mock('../src/utils/googleCalendar', () => ({
+  checkGoogleConflicts: jest.fn(),
+}));
+
+jest.mock('../src/utils/sendEmail', () => ({
+  sendEmail: jest.fn(),
+}));
+
+const express = require('express');
+const cookieParser = require('cookie-parser');
+const request = require('supertest');
+const jwt = require('jsonwebtoken');
+
+const pool = require('../src/config/db');
+const { checkGoogleConflicts } = require('../src/utils/googleCalendar');
+const { sendEmail } = require('../src/utils/sendEmail');
+const appointmentRoutes = require('../src/routes/appointments');
+
+const app = express();
+
+app.use(express.json());
+app.use(cookieParser());
+app.use('/api/appointments', appointmentRoutes);
+
+describe('Appointment booking', () => {
+  const originalSecret = process.env.JWT_SECRET;
+
+  beforeAll(() => {
+    process.env.JWT_SECRET = 'test-only-secret-not-for-production';
+  });
+
+  afterAll(() => {
+    if (originalSecret === undefined) {
+      delete process.env.JWT_SECRET;
+    } else {
+      process.env.JWT_SECRET = originalSecret;
+    }
+  });
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
+
+  test('redirects guests to login without accessing the database', async () => {
+    const response = await request(app)
+      .post('/api/appointments/book')
+      .send({ appointment_id: 1 });
+
+    expect(response.status).toBe(302);
+    expect(response.headers.location).toBe('/login');
+
+    expect(pool.query).not.toHaveBeenCalled();
+    expect(checkGoogleConflicts).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  test('redirects users with an invalid token without accessing the database', async () => {
+    const response = await request(app)
+      .post('/api/appointments/book')
+      .set('Cookie', 'token=invalid-token')
+      .send({ appointment_id: 1 });
+
+    expect(response.status).toBe(302);
+    expect(response.headers.location).toBe('/login');
+
+    expect(pool.query).not.toHaveBeenCalled();
+    expect(checkGoogleConflicts).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  test('rejects an unavailable appointment without updating it or sending email', async () => {
+    const token = jwt.sign(
+      { id: 123, role: 'user' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    pool.query.mockResolvedValueOnce({ rows: [] });
+
+    const response = await request(app)
+      .post('/api/appointments/book')
+      .set('Cookie', `token=${token}`)
+      .send({ appointment_id: 1 });
+
+    expect(response.status).toBe(302);
+    expect(response.headers.location).toBe(
+      '/success?message=Appointment%20already%20booked%20or%20invalid'
+    );
+
+    expect(pool.query).toHaveBeenCalledTimes(1);
+    expect(pool.query).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'WHERE a.id = $1 AND a.is_booked = false'
+      ),
+      [1]
+    );
+
+    expect(checkGoogleConflicts).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  test('books an available appointment for the authenticated user', async () => {
+  const token = jwt.sign(
+    { id: 123, role: 'user' },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+
+  const appointment = {
+    id: 1,
+    gp_name: 'Test GP',
+    city: 'Portsmouth',
+    practice_name: 'Test Practice',
+    start_time: '2030-01-15T10:00:00Z',
+    end_time: '2030-01-15T10:15:00Z',
+  };
+
+  pool.query
+    .mockResolvedValueOnce({
+      rows: [appointment],
+    })
+    .mockResolvedValueOnce({
+      rows: [{ google_tokens: null }],
+    })
+    .mockResolvedValueOnce({
+      rows: [{
+        ...appointment,
+        is_booked: true,
+        user_id: 123,
+      }],
+    });
+
+  sendEmail.mockResolvedValueOnce(true);
+
+  const response = await request(app)
+    .post('/api/appointments/book')
+    .set('Cookie', `token=${token}`)
+    .send({ appointment_id: 1 });
+
+  expect(response.status).toBe(302);
+  expect(response.headers.location).toBe(
+    '/success?message=Appointment%20booked%20successfully'
+  );
+
+  expect(pool.query).toHaveBeenCalledTimes(3);
+
+  expect(pool.query).toHaveBeenNthCalledWith(
+    2,
+    'SELECT google_tokens FROM users WHERE id = $1',
+    [123]
+  );
+
+  expect(pool.query).toHaveBeenNthCalledWith(
+    3,
+    expect.stringContaining(
+      'UPDATE appointments SET is_booked = true, user_id = $1'
+    ),
+    [123, 1]
+  );
+
+  expect(checkGoogleConflicts).not.toHaveBeenCalled();
+
+  expect(sendEmail).toHaveBeenCalledTimes(1);
+  expect(sendEmail).toHaveBeenCalledWith(
+    123,
+    'Appointment Booked',
+    'appointment booking',
+    expect.objectContaining({
+      appointment_id: 1,
+      gp_name: 'Test GP',
+      city: 'Portsmouth',
+      practice_name: 'Test Practice',
+    })
+  );
+});
+});
