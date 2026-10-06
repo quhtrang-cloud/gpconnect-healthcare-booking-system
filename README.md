@@ -12,7 +12,7 @@ The application combines city-wide appointment discovery, rule-based scheduling 
 
 This project was developed independently for my MSc Information Systems dissertation at the University of Portsmouth. It uses simulated data and was evaluated locally without research participants.
 
-I was responsible for requirements analysis, interface design, database design, frontend and backend implementation, integration work, and prototype evaluation. Following the dissertation, I continued improving the codebase and added Jest unit tests and Supertest booking route tests, including a regression test that reproduced and helped resolve a red-flag parsing bug.
+I was responsible for requirements analysis, interface design, database design, frontend and backend implementation, integration work, and prototype evaluation. Following the dissertation, I continued improving the codebase and added Jest unit tests and Supertest route tests for booking and selected swap access controls, including a regression test that reproduced and helped resolve a red-flag parsing bug.
 
 ## Key Features
 
@@ -97,13 +97,9 @@ The SMS checkbox currently stores the user's preference only. SMS delivery is no
 ## User Roles
 
 | Role | Capabilities |
-
 | --- | --- |
-
 | User | Register, sign in, search appointments, receive recommendations, book or cancel appointments, request swaps, manage preferences, connect Google Calendar, synchronise appointments, and submit feedback |
-
 | Administrator | Manage GP profiles and appointment slots, review swap requests, approve or reject swaps, and review feedback |
-
 | GP | View appointments and feedback associated with the GP profile linked to the authenticated account |
 
 GP login accounts are linked to GP profiles through `users.gp_id`, which references `gps.id`.
@@ -111,23 +107,14 @@ GP login accounts are linked to GP profiles through `users.gp_id`, which referen
 ## Technology Stack
 
 | Area | Technologies |
-
 | --- | --- |
-
 | Frontend | EJS, HTML5, CSS3, JavaScript, Bootstrap 5 |
-
 | Backend | Node.js, Express.js |
-
 | Database | PostgreSQL, `pg` |
-
 | Authentication | JWT, HTTP-only cookies, bcrypt password hashing |
-
 | Calendar | Google Calendar API, OAuth 2.0 |
-
 | Email | Nodemailer, Brevo SMTP |
-
 | Testing | Jest, Supertest |
-
 | Development | npm, Git, GitHub |
 
 ## Project Structure
@@ -137,6 +124,7 @@ GP login accounts are linked to GP profiles through `users.gp_id`, which referen
 ├── server.js
 ├── package.json
 ├── tests
+│   ├── admin.test.js
 │   ├── auth.test.js
 │   ├── appointments.test.js
 │   └── triageUrgency.test.js
@@ -381,7 +369,15 @@ Before production use, the platform would require additional controls including 
 
 ## Automated Testing
 
-The project includes 23 automated test cases using Jest and Supertest: five authentication middleware tests, fourteen scheduling urgency tests, and four appointment booking route tests.
+The project includes 27 automated test cases across four test suites using Jest and Supertest.
+
+| Test file | Scope | Cases |
+| --- | --- | --- |
+| `tests/auth.test.js` | Authentication middleware | 5 |
+| `tests/triageUrgency.test.js` | Rule-based scheduling urgency | 14 |
+| `tests/appointments.test.js` | Booking routes and swap-request ownership guard | 7 |
+| `tests/admin.test.js` | Non-admin access to swap approval | 1 |
+| **Total** | **Four test suites** | **27** |
 
 Run all tests:
 
@@ -425,33 +421,43 @@ A regression test reproduced a bug where non-empty `'false'` strings were treate
 
 These tests check the prototype's software rules, not the clinical validity of its scheduling categories.
 
-### Appointment Booking Route
+### Appointment Routes
 
-Four tests use Supertest to send HTTP requests to the Express booking route with real authentication middleware and mocked database, Google Calendar and email services.
+Seven tests use Supertest to send HTTP requests to the Express routes with real authentication middleware and mocked database, Google Calendar and email services.
 
-The tests cover:
+Six booking tests cover:
 
-- Guests are redirected to login without accessing the database or calling external services
+- Guests are redirected to login without accessing the database or calling external services.
 
-- Requests with invalid tokens are redirected to login without accessing the database or calling external services
+- Requests with invalid tokens are redirected to login without accessing the database or calling external services.
 
-- Unavailable appointments are rejected without a database update or email call
+- Appointments unavailable at the initial lookup are rejected without an update or email call.
 
-- Successful booking uses the authenticated user's ID, calls the database update and email functions, and redirects to the success message
+- Successful booking passes the authenticated user's ID to the update query, calls the email function and redirects to the success message.
+
+- An empty result from the conditional booking update produces an unavailable message without calling the email function.
+
+- A mocked Google Calendar conflict blocks booking before an update or email call.
+
+One swap-request test checks that an empty ownership-filtered appointment lookup causes rejection without inserting a swap request or calling the email function. It also checks that the lookup includes the signed-in user's ID and the ownership condition.
+
+### Admin Swap Approval
+
+One route test supplies a valid JWT with the `user` role and checks that the approval endpoint redirects to login before connecting to the database, querying data, accessing notification files or calling the email function.
 
 ### Test Isolation and Scope
 
-Authentication and booking tests use a temporary test-only JWT secret that is restored after testing. Booking mocks are reset before each test.
+Tests that use JWTs temporarily set a test-only secret and restore the original environment value afterward. Route mocks are reset before each test. The admin test also mocks notification-file access.
 
 The test suites do not require a running PostgreSQL database, Google Calendar credentials or SMTP configuration.
 
-Mocked route tests verify application behaviour against controlled service responses. They do not verify SQL execution, persistence in PostgreSQL, actual email delivery or live Google Calendar integration.
+Mocked route tests verify application behaviour against controlled service responses and check selected query arguments. They do not execute SQL or verify PostgreSQL persistence, actual email delivery, live Calendar integration or concurrent database transactions.
 
-Registration, login/logout routes, cancellation, swapping, concurrent booking attempts, browser interactions and remaining scheduling rules are not yet covered by these automated tests. Passing the tests does not establish complete coverage or production readiness.
+The swap tests cover selected access controls only. Successful swap approval, ownership exchange, rollback, same-practice eligibility and rejection workflows are not yet covered by automated tests. Registration, login/logout routes, cancellation, browser interactions and remaining scheduling rules also require further testing. Passing these tests does not establish complete coverage or production readiness.
 
 ## Verification Checklist
 
-Automated tests cover authentication middleware, selected scheduling urgency rules and four booking route scenarios with mocked services. The following checklist covers workflows and integrations that still require manual verification, including real database behaviour:
+Automated tests cover authentication middleware, selected scheduling urgency rules, six booking scenarios and two swap access-control scenarios with mocked services. The following checklist covers workflows and integrations that still require manual verification, including real database behaviour:
 
 - Registration, login, logout, and role-based redirects
 
@@ -485,7 +491,7 @@ Automated tests cover authentication middleware, selected scheduling urgency rul
 
 - SMS preferences are recorded, but SMS delivery is not currently implemented.
 
-- Further development would include automated tests for cancellation and swap workflows, integration tests against an isolated PostgreSQL test database, concurrent booking checks, formal accessibility evaluation, encrypted OAuth-token storage, CSRF protection, rate limiting, audit logging, monitoring, and production deployment controls.
+- Further development would include automated tests for cancellation and additional swap workflows, integration tests against an isolated PostgreSQL test database, concurrent booking checks, formal accessibility evaluation, encrypted OAuth-token storage, CSRF protection, rate limiting, audit logging, monitoring, and production deployment controls.
 
 ## Author
 
