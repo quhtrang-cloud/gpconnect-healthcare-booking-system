@@ -17,13 +17,13 @@
       --accent: #4fc3f7;
       --light: #f8f9fa;
       --dark: #212529;
+      --section-space: 2.25rem;
+      --features-top-space: 6rem;
     }
-
     body {
       font-family: 'Poppins', sans-serif;
       overflow-x: hidden;
     }
-
     .hero-section {
       background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
       color: white;
@@ -31,7 +31,6 @@
       position: relative;
       overflow: hidden;
     }
-
     .hero-section::before {
       content: '';
       position: absolute;
@@ -43,7 +42,6 @@
       opacity: 0.6;
       pointer-events: none;
     }
-
     .feature-card {
       transition: transform 0.3s ease, box-shadow 0.3s ease;
       border: none;
@@ -51,46 +49,38 @@
       overflow: hidden;
       height: 100%;
     }
-
     .feature-card:hover {
       transform: translateY(-5px);
       box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
     }
-
     .feature-icon {
       font-size: 2.5rem;
       color: var(--primary);
       margin-bottom: 1rem;
     }
-
     .btn-primary {
       background-color: var(--primary);
       border-color: var(--primary);
       padding: 0.75rem 2rem;
       font-weight: 500;
     }
-
     .btn-primary:hover {
       background-color: var(--secondary);
       border-color: var(--secondary);
     }
-
     .btn-outline-primary {
       color: var(--primary);
       border-color: var(--primary);
     }
-
     .btn-outline-primary:hover {
       background-color: var(--primary);
       color: white;
     }
-
     .section-title {
       position: relative;
       display: inline-block;
       margin-bottom: 2rem;
     }
-
     .section-title::after {
       content: '';
       position: absolute;
@@ -101,13 +91,11 @@
       height: 3px;
       background-color: var(--accent);
     }
-
     .how-it-works-step {
       position: relative;
       padding-left: 3rem;
       margin-bottom: 2rem;
     }
-
     .step-number {
       position: absolute;
       left: 0;
@@ -122,33 +110,54 @@
       justify-content: center;
       font-weight: bold;
     }
-
     .testimonial-card {
       border-left: 4px solid var(--accent);
     }
-
-    .stats-item {
+    .features-section {
+      padding: var(--features-top-space) 0 var(--section-space);
+    }
+    .how-it-works-section {
+      padding: var(--section-space) 0;
+    }
+    .how-it-works-step:last-child,
+    .how-it-works-step:last-child p {
+      margin-bottom: 0;
+    }
+    .stats-section {
+      padding: calc(var(--section-space) + 1.5rem) 0;
+    }
+    .stats-section .stats-item {
       text-align: center;
-      padding: 1.5rem;
+      padding: 0 0.5rem;
     }
-
-    .stats-number {
-      font-size: 2.5rem;
+    .stats-section .stats-number {
+      font-size: clamp(2rem, 3vw, 2.75rem);
       font-weight: 700;
+      line-height: 1.2;
       color: var(--primary);
+      margin-bottom: 0.5rem;
     }
-
-    .stats-label {
-      color: var(--secondary);
+    .stats-section .stats-label {
+      font-size: 1rem;
       font-weight: 500;
+      line-height: 1.5;
+      color: var(--secondary);
     }
-
+    @media (max-width: 575.98px) {
+      :root {
+        --section-space: 1.5rem;
+        --features-top-space: 3rem;
+      }
+      .stats-section .stats-label {
+        font-size: 0.875rem;
+      }
+    }
     .cta-section {
+      padding: var(--section-space) 0;
       background-color: var(--light);
       position: relative;
       overflow: hidden;
     }
-
     .wave-shape {
       position: absolute;
       bottom: 0;
@@ -159,7 +168,6 @@
       background-size: cover;
       transform: rotate(180deg);
     }
-
     /* High Contrast Overrides */
     .high-contrast .hero-section,
     .high-contrast .btn-primary,
@@ -218,8 +226,8 @@
     </div>
   </section>
   <!-- Features Section -->
-  <section class="py-5">
-    <div class="container py-5">
+  <section class="features-section">
+    <div class="container">
       <h2 class="text-center section-title">Key Features</h2>
       <p class="text-center lead mb-5">Everything you need for seamless healthcare scheduling</p>
       <div class="row g-4">
@@ -287,8 +295,8 @@
     </div>
   </section>
   <!-- How It Works Section -->
-  <section class="py-5 bg-light">
-    <div class="container py-5">
+  <section class="how-it-works-section bg-light">
+    <div class="container">
       <h2 class="text-center section-title">How It Works</h2>
       <p class="text-center lead mb-5">Get started in just a few simple steps</p>
       <div class="row">
@@ -318,28 +326,28 @@
     </div>
   </section>
   <!-- Stats Section -->
-  <section class="py-5">
-    <div class="container py-5">
-      <div class="row g-4">
-        <div class="col-md-3">
+  <section class="stats-section">
+    <div class="container">
+      <div class="row g-4 align-items-start">
+        <div class="col-6 col-md-3">
           <div class="stats-item">
             <div class="stats-number" data-count="10000">0</div>
             <div class="stats-label">Appointments Booked</div>
           </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
           <div class="stats-item">
             <div class="stats-number" data-count="150">0</div>
             <div class="stats-label">Participating GPs</div>
           </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
           <div class="stats-item">
             <div class="stats-number" data-count="95">0</div>
             <div class="stats-label">% Satisfaction Rate</div>
           </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
           <div class="stats-item">
             <div class="stats-number" data-count="24">0</div>
             <div class="stats-label">Hour Support</div>
@@ -349,8 +357,8 @@
     </div>
   </section>
   <!-- CTA Section -->
-  <section class="cta-section py-5 position-relative">
-    <div class="container py-5 text-center">
+  <section class="cta-section position-relative">
+    <div class="container text-center">
       <h2 class="display-5 fw-bold mb-4">Ready to Experience Better Healthcare Scheduling?</h2>
       <p class="lead mb-5">Join thousands of patients who have simplified their GP appointments.</p>
       <a href="/register" class="btn btn-primary btn-lg px-5">
@@ -365,23 +373,19 @@
     document.addEventListener('DOMContentLoaded', function () {
       const counters = document.querySelectorAll('.stats-number');
       const speed = 200;
-
       counters.forEach(counter => {
         const target = +counter.getAttribute('data-count');
         const count = +counter.innerText;
         const increment = target / speed;
-
         if (count < target) {
           counter.innerText = Math.ceil(count + increment);
           setTimeout(updateCount, 1);
         } else {
           counter.innerText = target;
         }
-
         function updateCount() {
           const count = +counter.innerText;
           const increment = target / speed;
-
           if (count < target) {
             counter.innerText = Math.ceil(count + increment);
             setTimeout(updateCount, 1);
@@ -390,7 +394,6 @@
           }
         }
       });
-
       // Apply high contrast mode from localStorage
       if (localStorage.getItem('highContrast') === 'true') {
         document.body.classList.add('high-contrast');
